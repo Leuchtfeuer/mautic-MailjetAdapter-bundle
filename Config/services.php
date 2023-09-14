@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use MauticPlugin\MailjetBundle\Mailer\Factory\MailjetTransportFactory;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
 return static function (ContainerConfigurator $configurator) {
@@ -11,5 +12,7 @@ return static function (ContainerConfigurator $configurator) {
         ->autoconfigure();
 
     $services->load('MauticPlugin\\MailjetBundle\\', '../')
-        ->exclude('../{Config');
+        ->exclude('../{Config,Mailer/Transport/MailjetSmtpTransport.php}');
+
+    $services->get(MailjetTransportFactory::class)->tag('mailer.transport_factory');
 };
