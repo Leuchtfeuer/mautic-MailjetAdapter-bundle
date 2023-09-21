@@ -37,7 +37,7 @@ class MailjetTransportFactory extends AbstractTransportFactory
         $password = $this->getPassword($dsn);
 
         if (MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME === $dsn->getScheme() && $user && $password) {
-            return new MailjetSmtpTransport($user, $password, $dsn->getPort(465), $this->dispatcher, $this->logger);
+            return new MailjetSmtpTransport($user, $password, $dsn->getPort(MailjetSmtpTransport::MAILJET_DEFAULT_PORT), $this->dispatcher, $this->logger);
         }
 
         throw new UnsupportedSchemeException($dsn, 'mailjet', $this->getSupportedSchemes());

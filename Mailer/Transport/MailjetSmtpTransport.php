@@ -14,7 +14,8 @@ use Symfony\Component\Mime\RawMessage;
 
 class MailjetSmtpTransport extends EsmtpTransport
 {
-    public const MAILJET_HOST = 'in-v3.mailjet.com';
+    public const MAILJET_HOST               = 'in-v3.mailjet.com';
+    public const MAILJET_DEFAULT_PORT       = 465;
     public const MAUTIC_MAILJET_SMTP_SCHEME = 'mautic+mailjet+smtp';
 
     public function __construct(
