@@ -42,6 +42,8 @@ class CallbackSubscriber implements EventSubscriberInterface
 
         $postData = $webhookEvent->getRequest()->request->all();
         if (empty($postData)) {
+            $webhookEvent->setResponse(new Response('There is no data to process.', Response::HTTP_NOT_FOUND));
+
             return;
         }
 
@@ -54,10 +56,6 @@ class CallbackSubscriber implements EventSubscriberInterface
         }
 
         foreach ($events as $event) {
-            if (!in_array($event['event'], ['bounce', 'blocked', 'spam', 'unsub'])) {
-                continue;
-            }
-
             if ('bounce' === $event['event'] || 'blocked' === $event['event']) {
                 $reason = $event['error_related_to'].': '.$event['error'];
                 $type   = DoNotContact::BOUNCED;
