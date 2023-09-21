@@ -1,0 +1,215 @@
+<?php
+
+declare(strict_types=1);
+
+namespace MauticPlugin\MailjetBundle\Tests\Functional\EventSubscriber;
+
+use Mautic\CoreBundle\Test\MauticMysqlTestCase;
+use Mautic\EmailBundle\Entity\Stat;
+use Mautic\LeadBundle\Entity\DoNotContact;
+use Mautic\LeadBundle\Entity\Lead;
+use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetSmtpTransport;
+use Symfony\Component\HttpFoundation\Request;
+
+final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
+{
+    protected function setUp(): void
+    {
+        if ('testMailjetTransportWhenNoEmailDsnConfigured' !== $this->getName()) {
+            $this->configParams['mailer_dsn'] = MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME.'://user:pass@host:25';
+        }
+
+        parent::setUp();
+    }
+
+    public function testMailjetTransportWhenNoEmailDsnConfigured(): void
+    {
+        $this->client->request(Request::METHOD_POST, '/mailer/callback');
+        $response = $this->client->getResponse();
+
+        $this->assertSame('No email transport that could process this callback was found', $response->getContent());
+        $this->assertSame(404, $response->getStatusCode());
+    }
+
+    public function testMailjetTransportReceivesEmptyPayload(): void
+    {
+        $this->client->request(Request::METHOD_POST, '/mailer/callback');
+        $response = $this->client->getResponse();
+
+        $this->assertSame('There is no data to process.', $response->getContent());
+        $this->assertSame(404, $response->getStatusCode());
+    }
+
+    public function testMailjetTransportCallbackWithOneBouncePayload(): void
+    {
+        $type    = 'bounce';
+        $email   = $type.'@mautic.test';
+        $contact = $this->createContact($email);
+        $hash    = '1123asda13';
+        $stat    = $this->createStat($contact, $email, $hash);
+
+        $this->em->flush();
+
+        $param = $this->payloadStructure($type, $email, $hash);
+
+        $this->client->request(Request::METHOD_POST, '/mailer/callback', $param);
+        $response = $this->client->getResponse();
+
+        $this->assertSame('Callback processed', $response->getContent());
+        $this->assertSame(200, $response->getStatusCode());
+
+        $result = $this->getCommentAndReason($type);
+
+        $openDetails = $stat->getOpenDetails();
+        $bounces     = $openDetails['bounces'][0];
+        $this->assertSame($result['comments'], $bounces['reason']);
+
+        $this->assertDoNotContact($contact, $result);
+    }
+
+    public function testCallbackProcessByHashId(): void
+    {
+        $payload  = [];
+        $stats    = [];
+        $contacts = [];
+        foreach (['bounce', 'blocked', 'spam', 'unsub', 'sent'] as $type) {
+            $email   = $type.'@mautic.test';
+            $hash    = '123'.$type.'sasd';
+            $contact = $this->createContact($email);
+
+            $contacts[$type] = $contact;
+            $stats[$email]   = $this->createStat($contact, $email, $hash);
+            $payload[]       = $this->payloadStructure($type, $email, $hash);
+        }
+
+        $this->em->flush();
+
+        $this->client->request(Request::METHOD_POST, '/mailer/callback', $payload);
+        $response = $this->client->getResponse();
+
+        $this->assertSame('Callback processed', $response->getContent());
+        $this->assertSame(200, $response->getStatusCode());
+
+        foreach (['bounce', 'blocked', 'spam', 'unsub'] as $type) {
+            $result  = $this->getCommentAndReason($type);
+            $contact = $contacts[$type];
+
+            $openDetails = $stats[$contact->getEmail()]->getOpenDetails();
+            $bounces     = $openDetails['bounces'][0];
+
+            $this->assertSame($result['comments'], $bounces['reason']);
+
+            $this->assertDoNotContact($contact, $result);
+        }
+    }
+
+    public function testCallbackProcessByAddresses(): void
+    {
+        $payload  = [];
+        $contacts = [];
+        foreach (['bounce', 'blocked', 'spam', 'unsub'] as $type) {
+            $email           = $type.'@mautic.test';
+            $contact         = $this->createContact($email);
+            $contacts[$type] = $contact;
+            $payload[]       = $this->payloadStructure($type, $email);
+        }
+
+        $this->em->flush();
+
+        $this->client->request(Request::METHOD_POST, '/mailer/callback', $payload);
+        $response = $this->client->getResponse();
+
+        $this->assertSame('Callback processed', $response->getContent());
+        $this->assertSame(200, $response->getStatusCode());
+
+        foreach (['bounce', 'blocked', 'spam', 'unsub'] as $type) {
+            $result = $this->getCommentAndReason($type);
+
+            $this->assertDoNotContact($contacts[$type], $result);
+        }
+    }
+
+    /**
+     * @return array<string, int|string>
+     */
+    private function payloadStructure(string $type, string $email, string $hash = ''): array
+    {
+        return [
+            'event'            => $type,
+            'time'             => '1513975381',
+            'MessageID'        => 0,
+            'Message_GUID'     => 0,
+            'email'            => $email,
+            'mj_campaign_id'   => 0,
+            'mj_contact_id'    => 0,
+            'customcampaign'   => '',
+            'mj_message_id'    => 0,
+            'CustomID'         => !empty($hash) ? $hash.'-'.$email : $email,
+            'Payload'          => '',
+            'error_related_to' => $type,
+            'error'            => $type,
+            'source'           => 'spam button',
+        ];
+    }
+
+    /**
+     * @return array<string, string|int>
+     */
+    private function getCommentAndReason(string $type): array
+    {
+        return match ($type) {
+            'bounce', 'blocked' => [
+                'comments' => $type.': '.$type,
+                'reason'   => DoNotContact::BOUNCED,
+            ],
+            'spam' => [
+                'comments' => 'User reported email as spam, source: spam button',
+                'reason'   => DoNotContact::UNSUBSCRIBED,
+            ],
+            'unsub' => [
+                'comments' => 'User unsubscribed',
+                'reason'   => DoNotContact::UNSUBSCRIBED,
+            ],
+            default => [
+                'comments' => '',
+                'reason'   => '',
+            ],
+        };
+    }
+
+    private function createContact(string $email): Lead
+    {
+        $lead = new Lead();
+        $lead->setEmail($email);
+
+        $this->em->persist($lead);
+
+        return $lead;
+    }
+
+    private function createStat(Lead $contact, string $emailAddress, string $trackingHash): Stat
+    {
+        $stat = new Stat();
+        $stat->setLead($contact);
+        $stat->setTrackingHash($trackingHash);
+        $stat->setEmailAddress($emailAddress);
+        $stat->setDateSent(new \DateTime());
+
+        $this->em->persist($stat);
+
+        return $stat;
+    }
+
+    /**
+     * @param array<string, string|int> $result
+     */
+    private function assertDoNotContact(Lead $contact, array $result): void
+    {
+        $dnc = $contact->getDoNotContact()->current();
+
+        $this->assertSame('email', $dnc->getChannel());
+        $this->assertSame($result['comments'], $dnc->getComments());
+        $this->assertSame($contact, $dnc->getLead());
+        $this->assertSame($result['reason'], $dnc->getReason());
+    }
+}
