@@ -31,6 +31,7 @@ Follow the steps tp setup Mailjet SMTP DSN,
 1. Navigate to Configuration (/s/config/edit>)
 2. Scroll to Email Settings
 3. Update the following fields leaving rest default or empty,
+
 |  Field    | Value                  |
 |-----------|------------------------|
 | Scheme    |  `mautic+mailjet+smtp` |
