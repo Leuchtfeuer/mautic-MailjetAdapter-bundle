@@ -39,7 +39,6 @@ class MailjetTransportFactory extends AbstractTransportFactory
     {
         $user     = $this->getUser($dsn);
         $password = $this->getPassword($dsn);
-        $host     = 'default' === $dsn->getHost() ? null : $dsn->getHost();
         $sandbox  = filter_var($dsn->getOption('sandbox', false), \FILTER_VALIDATE_BOOL);
 
         if (MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME === $dsn->getScheme() && $user && $password) {
@@ -47,7 +46,7 @@ class MailjetTransportFactory extends AbstractTransportFactory
         }
 
         if (MailjetApiTransport::SCHEME === $dsn->getScheme() && $user && $password) {
-            return (new MailjetApiTransport($user, $password, $sandbox, $this->client, $this->dispatcher, $this->logger))->setHost($host);
+            return new MailjetApiTransport($user, $password, $sandbox, $this->client, $this->dispatcher, $this->logger);
         }
 
         throw new UnsupportedSchemeException($dsn, 'mailjet', $this->getSupportedSchemes());

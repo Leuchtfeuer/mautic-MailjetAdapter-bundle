@@ -12,7 +12,7 @@ return static function (ContainerConfigurator $configurator) {
         ->autoconfigure();
 
     $services->load('MauticPlugin\\MailjetBundle\\', '../')
-        ->exclude('../{Config,Mailer/Transport/MailjetSmtpTransport.php}');
+        ->exclude('../{Config,Mailer/Transport/MailjetApiTransport.php,Mailer/Transport/MailjetSmtpTransport.php}');
 
     $services->get(MailjetTransportFactory::class)->tag('mailer.transport_factory');
 };
