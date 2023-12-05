@@ -6,8 +6,8 @@ namespace MauticPlugin\MailjetBundle\Tests\Functional\Mailer\Transport;
 
 use Mautic\CoreBundle\Helper\UserHelper;
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
-use Mautic\LeadBundle\Entity\Lead;
 use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetApiTransport;
+use MauticPlugin\MailjetBundle\Tests\Functional\CreateEntities;
 use PHPUnit\Framework\Assert;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpClient\MockHttpClient;
@@ -17,6 +17,8 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 final class MailjetApiTransportTest extends MauticMysqlTestCase
 {
+    use CreateEntities;
+
     protected function setUp(): void
     {
         $this->configParams['mailer_dsn']            = MailjetApiTransport::SCHEME.'://user:pass@default?sandbox=true';
@@ -105,8 +107,7 @@ final class MailjetApiTransportTest extends MauticMysqlTestCase
             },
         ]);
 
-        $lead = new Lead();
-        $lead->setEmail('john@doe.email')->setFirstname('John');
+        $lead = $this->createLead();
 
         $this->em->persist($lead);
         $this->em->flush();
@@ -149,6 +150,26 @@ final class MailjetApiTransportTest extends MauticMysqlTestCase
         $this->assertSame('', $email->getReplyTo()[0]->getName());
     }
 
+    public function testSendTestEmailAction(): void
+    {
+        $expectedResponses = [
+            function ($method, $url, $options): MockResponse {
+                Assert::assertSame(Request::METHOD_POST, $method);
+                Assert::assertSame('https://api.mailjet.com/v3.1/send', $url);
+                $this->assertSendTestEmailActionRequestBody($options['body']);
+
+                return new MockResponse('{"Messages":[{"Status":"success","CustomID":"","To":[{"Email":"soome@example.com","MessageUUID":"","MessageID":0,"MessageHref":"https://api.mailjet.com/v3/REST/message/0"}],"Cc":[],"Bcc":[]}]}');
+            },
+        ];
+
+        /** @var MockHttpClient $mockHttpClient */
+        $mockHttpClient = self::getContainer()->get(HttpClientInterface::class);
+        $mockHttpClient->setResponseFactory($expectedResponses);
+        $this->client->request(Request::METHOD_GET, '/s/ajax?action=email:sendTestEmail');
+        Assert::assertTrue($this->client->getResponse()->isOk());
+        Assert::assertSame('{"success":1,"message":"Success!"}', $this->client->getResponse()->getContent());
+    }
+
     private function assertRequestBody(mixed $body): void
     {
         $bodyArray = json_decode($body, true);
@@ -165,5 +186,19 @@ final class MailjetApiTransportTest extends MauticMysqlTestCase
         $this->assertSame('admin@mautic.test', $message['ReplyTo']['Email']);
         $this->assertEmpty($message['Attachments']);
         $this->assertArrayHasKey('CustomID', $message['Headers']);
+    }
+
+    private function assertSendTestEmailActionRequestBody(string $body): void
+    {
+        $bodyArray = json_decode($body, true);
+        $this->assertCount(2, $bodyArray);
+        $message = array_pop($bodyArray['Messages']);
+        $this->assertSame('Admin', $message['From']['Name']);
+        $this->assertSame('admin@mautic.test', $message['From']['Email']);
+        $this->assertSame('Admin User', $message['To'][0]['Name']);
+        $this->assertSame('admin@yoursite.com', $message['To'][0]['Email']);
+        $this->assertSame('Mautic test email', $message['Subject']);
+        $this->assertSame('Hi! This is a test email from Mautic. Testing...testing...1...2...3!', $message['TextPart']);
+        $this->assertEmpty($message['HTMLPart']);
     }
 }

@@ -120,6 +120,7 @@ final class MailjetApiTransport extends AbstractApiTransport
         if ($emails = $email->getCc()) {
             $message['Cc'] = $this->formatAddresses($emails);
         }
+
         if ($emails = $email->getBcc()) {
             $message['Bcc'] = $this->formatAddresses($emails);
         }
@@ -197,7 +198,9 @@ final class MailjetApiTransport extends AbstractApiTransport
         }
 
         // Add CustomID
-        $headers['CustomID'] = $message->getLeadIdHash().'-'.current($message->getTo())->getAddress();
+        if ($message->getLeadIdHash()) {
+            $headers['CustomID'] = $message->getLeadIdHash().'-'.current($message->getTo())->getAddress();
+        }
 
         return $headers;
     }
