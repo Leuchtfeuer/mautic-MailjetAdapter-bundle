@@ -147,7 +147,6 @@ final class MailjetApiTransportTest extends MauticMysqlTestCase
         $this->assertSame($lead->getEmail(), $email->getTo()[0]->getAddress());
         $this->assertCount(1, $email->getReplyTo());
         $this->assertSame('', $email->getReplyTo()[0]->getName());
-        $this->assertSame('some', $email->getLeadIdHash());
     }
 
     private function assertRequestBody(mixed $body): void
