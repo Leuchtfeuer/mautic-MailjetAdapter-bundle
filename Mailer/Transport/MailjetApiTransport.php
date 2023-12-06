@@ -5,14 +5,21 @@ declare(strict_types=1);
 namespace MauticPlugin\MailjetBundle\Mailer\Transport;
 
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
+use Mautic\EmailBundle\Model\TransportCallback;
+use Mautic\LeadBundle\Entity\DoNotContact;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Envelope;
+use Symfony\Component\Mailer\Exception\HttpTransportException;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mailer\Transport\AbstractApiTransport;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
+use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
@@ -38,6 +45,7 @@ final class MailjetApiTransport extends AbstractApiTransport
         string $user,
         string $password,
         bool $sandbox,
+        private TransportCallback $callback,
         HttpClientInterface $client = null,
         EventDispatcherInterface $dispatcher = null,
         LoggerInterface $logger = null
@@ -61,6 +69,13 @@ final class MailjetApiTransport extends AbstractApiTransport
         return $this->host.($this->port ? ':'.$this->port : '');
     }
 
+    /**
+     * @throws ClientExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws RedirectionExceptionInterface
+     * @throws ServerExceptionInterface
+     * @throws TransportExceptionInterface
+     */
     protected function doSendApi(SentMessage $sentMessage, Email $email, Envelope $envelope): ResponseInterface
     {
         try {
@@ -71,8 +86,9 @@ final class MailjetApiTransport extends AbstractApiTransport
             $response = $this->sendMessage($payload);
 
             // Log the payload.
-        } catch (\Throwable $e) {
-            throw $e;
+            $this->processResponse($response, $email, $payload);
+        } catch (\Exception $e) {
+            throw new TransportException($e->getMessage());
         }
 
         return $response;
@@ -203,5 +219,55 @@ final class MailjetApiTransport extends AbstractApiTransport
         }
 
         return $headers;
+    }
+
+    /**
+     * @param array<string, array<int, array<string, array<string[]|string>|resource|string|null>>|bool> $message
+     *
+     * @throws RedirectionExceptionInterface
+     * @throws DecodingExceptionInterface
+     * @throws ClientExceptionInterface
+     * @throws TransportExceptionInterface
+     * @throws ServerExceptionInterface
+     */
+    private function processResponse(ResponseInterface $response, Email $email, array $message = []): void
+    {
+        $statusCode = $response->getStatusCode();
+        $result     = $response->toArray(false);
+
+        if (200 !== $statusCode) {
+            $errorDetails = '';
+            $errors       = $result['Messages'][0]['Errors'] ?? $result;
+            foreach ($errors as $error) {
+                $errorDetails .= sprintf(
+                    '%s "%s" (code %s)',
+                    !empty($error['ErrorRelatedTo']) ? 'Related to properties {'.implode(', ', $error['ErrorRelatedTo']).'}:' : '',
+                    $error['ErrorMessage'],
+                    $error['StatusCode']
+                ).PHP_EOL;
+            }
+
+            $errorMessage = sprintf('Unable to send an email: "%s" (code %d).', $errorDetails, $statusCode);
+
+            $this->getLogger()->error($errorMessage);
+
+            $emailAddress = $message['Messages'][0]['To'][0]['Email'];
+
+            \assert($email instanceof MauticMessage);
+            $metadata = $email->getMetadata();
+
+            if (isset($metadata[$emailAddress]['leadId'])) {
+                $emailId = !empty($metadata[$emailAddress]['emailId']) ? (int) $metadata[$emailAddress]['emailId'] : null;
+                $this->callback->addFailureByContactId(
+                    $metadata[$emailAddress]['leadId'],
+                    $errorMessage,
+                    DoNotContact::BOUNCED,
+                    $emailId
+                );
+            }
+
+            throw new HttpTransportException($errorMessage, $response);
+        }
+
     }
 }

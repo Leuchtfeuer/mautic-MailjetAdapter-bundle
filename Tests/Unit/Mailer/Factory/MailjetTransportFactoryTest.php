@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\MailjetBundle\Tests\Unit\Mailer\Factory;
 
+use Mautic\EmailBundle\Model\TransportCallback;
 use MauticPlugin\MailjetBundle\Mailer\Factory\MailjetTransportFactory;
 use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetSmtpTransport;
@@ -22,11 +23,12 @@ final class MailjetTransportFactoryTest extends TestCase
 
     protected function setUp(): void
     {
-        $eventDispatcherMock = $this->createMock(EventDispatcherInterface::class);
-        $httpClientMock      = $this->createMock(HttpClientInterface::class);
-        $loggerMock          = $this->createMock(LoggerInterface::class);
+        $transportCallbackMock = $this->createMock(TransportCallback::class);
+        $eventDispatcherMock   = $this->createMock(EventDispatcherInterface::class);
+        $httpClientMock        = $this->createMock(HttpClientInterface::class);
+        $loggerMock            = $this->createMock(LoggerInterface::class);
 
-        $this->mailjetTransportFactory = new MailjetTransportFactory($eventDispatcherMock, $httpClientMock, $loggerMock);
+        $this->mailjetTransportFactory = new MailjetTransportFactory($transportCallbackMock, $eventDispatcherMock, $httpClientMock, $loggerMock);
     }
 
     /**

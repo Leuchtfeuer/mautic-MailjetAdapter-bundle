@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\MailjetBundle\Mailer\Factory;
 
+use Mautic\EmailBundle\Model\TransportCallback;
 use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetSmtpTransport;
 use Psr\Log\LoggerInterface;
@@ -17,6 +18,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class MailjetTransportFactory extends AbstractTransportFactory
 {
     public function __construct(
+        private TransportCallback $transportCallback,
         EventDispatcherInterface $eventDispatcher,
         HttpClientInterface $client = null,
         LoggerInterface $logger = null
@@ -46,7 +48,7 @@ class MailjetTransportFactory extends AbstractTransportFactory
         }
 
         if (MailjetApiTransport::SCHEME === $dsn->getScheme() && $user && $password) {
-            return new MailjetApiTransport($user, $password, $sandbox, $this->client, $this->dispatcher, $this->logger);
+            return new MailjetApiTransport($user, $password, $sandbox, $this->transportCallback, $this->client, $this->dispatcher, $this->logger);
         }
 
         throw new UnsupportedSchemeException($dsn, 'mailjet', $this->getSupportedSchemes());
