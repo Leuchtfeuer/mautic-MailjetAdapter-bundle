@@ -237,17 +237,17 @@ final class MailjetApiTransport extends AbstractApiTransport
 
         if (200 !== $statusCode) {
             $errorDetails = '';
-            $errors       = $result['Messages'][0]['Errors'] ?? $result;
+            $errors       = $result['Messages'][0]['Errors'] ?? [$result];
             foreach ($errors as $error) {
                 $errorDetails .= sprintf(
-                    '%s "%s" (code %s)',
+                    '"%s%s (code %s)"',
                     !empty($error['ErrorRelatedTo']) ? 'Related to properties {'.implode(', ', $error['ErrorRelatedTo']).'}:' : '',
                     $error['ErrorMessage'],
                     $error['StatusCode']
                 ).PHP_EOL;
             }
 
-            $errorMessage = sprintf('Unable to send an email: "%s" (code %d).', $errorDetails, $statusCode);
+            $errorMessage = sprintf('Unable to send an email: %s', $errorDetails);
 
             $this->getLogger()->error($errorMessage);
 
@@ -268,6 +268,5 @@ final class MailjetApiTransport extends AbstractApiTransport
 
             throw new HttpTransportException($errorMessage, $response);
         }
-
     }
 }
