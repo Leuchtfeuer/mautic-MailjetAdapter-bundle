@@ -135,9 +135,9 @@ final class MailjetApiTransportTest extends MauticMysqlTestCase
         $userHelper = static::getContainer()->get(UserHelper::class);
         $user       = $userHelper->getUser();
 
-        $this->assertSame('Hello John!', $email->getSubject());
-        $this->assertStringContainsString('This is test body for john@doe.email!', $email->getHtmlBody());
-        $this->assertSame('This is test body for john@doe.email!', $email->getTextBody());
+        $this->assertSame('Hello {contactfield=firstname}!', $email->getSubject());
+        $this->assertStringContainsString('This is test body for {contactfield=email}!', $email->getHtmlBody());
+        $this->assertSame('This is test body for {contactfield=email}!', $email->getTextBody());
         /** @phpstan-ignore-next-line */
         $this->assertSame('john@doe.email', $email->getMetadata()['john@doe.email']['tokens']['{contactfield=email}']);
         $this->assertCount(1, $email->getFrom());

@@ -60,9 +60,9 @@ final class MailjetApiTransportEmailUsingApiTest extends MauticMysqlTestCase
 
         $email = self::getMailerMessage();
 
-        $this->assertSame('Hello John!', $email->getSubject());
-        $this->assertStringContainsString('This is test body for john@doe.email!', $email->getHtmlBody());
-        $this->assertSame('This is test body for john@doe.email!', $email->getTextBody());
+        $this->assertSame('Hello {contactfield=firstname}!', $email->getSubject());
+        $this->assertStringContainsString('This is test body for {contactfield=email}!', $email->getHtmlBody());
+        $this->assertSame('This is test body for {contactfield=email}!', $email->getTextBody());
         /** @phpstan-ignore-next-line */
         $this->assertSame('john@doe.email', $email->getMetadata()['john@doe.email']['tokens']['{contactfield=email}']);
         $this->assertCount(1, $email->getFrom());
@@ -86,9 +86,9 @@ final class MailjetApiTransportEmailUsingApiTest extends MauticMysqlTestCase
         $this->assertSame('hello@doe.com', $message['From']['Email']);
         $this->assertSame('John', $message['To'][0]['Name']);
         $this->assertSame('john@doe.email', $message['To'][0]['Email']);
-        $this->assertSame('Hello John!', $message['Subject']);
-        $this->assertSame('This is test body for john@doe.email!', $message['TextPart']);
-        $this->assertStringContainsString('This is test body for john@doe.email!<img height="1" width="1"', $message['HTMLPart']);
+        $this->assertSame('Hello {contactfield=firstname}!', $message['Subject']);
+        $this->assertSame('This is test body for {contactfield=email}!', $message['TextPart']);
+        $this->assertStringContainsString('This is test body for {contactfield=email}!<img height="1" width="1"', $message['HTMLPart']);
         $this->assertEmpty($message['ReplyTo']['Name']);
         $this->assertSame('reply@doe.com', $message['ReplyTo']['Email']);
         $this->assertSame('visibility@doe.com', $message['Bcc'][0]['Email']);

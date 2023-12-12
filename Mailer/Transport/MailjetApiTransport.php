@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace MauticPlugin\MailjetBundle\Mailer\Transport;
 
+use Mautic\EmailBundle\Helper\MailHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
+use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
+use Mautic\EmailBundle\Mailer\Transport\TokenTransportTrait;
 use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\LeadBundle\Entity\DoNotContact;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -24,8 +27,10 @@ use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
 
-final class MailjetApiTransport extends AbstractApiTransport
+final class MailjetApiTransport extends AbstractApiTransport implements TokenTransportInterface
 {
+    use TokenTransportTrait;
+
     public const SCHEME       = 'mautic+mailjet+api';
     public const HOST         = 'api.mailjet.com';
     private const API_VERSION = '3.1';
@@ -57,6 +62,11 @@ final class MailjetApiTransport extends AbstractApiTransport
         parent::__construct($client, $dispatcher, $logger);
 
         $this->host = self::HOST;
+    }
+
+    public function getMaxBatchLimit(): int
+    {
+        return 5000;
     }
 
     public function __toString(): string
@@ -115,7 +125,7 @@ final class MailjetApiTransport extends AbstractApiTransport
     }
 
     /**
-     * @return array<string, array<int, array<string, array<string[]|string>|resource|string|null>>|bool>
+     * @return array<string, array<int, array<string, mixed>>|bool>
      */
     private function preparePayload(Email $email, Envelope $envelope): array
     {
@@ -124,13 +134,16 @@ final class MailjetApiTransport extends AbstractApiTransport
         }
 
         $attachments = $this->prepareAttachments($email);
+        $tokens      = $this->prepareTokens($email);
         $message     = [
-            'From'        => $this->formatAddress($envelope->getSender()),
-            'To'          => $this->formatAddresses($this->getRecipients($email, $envelope)),
-            'Subject'     => $email->getSubject(),
-            'Attachments' => $attachments,
-            'TextPart'    => $email->getTextBody(),
-            'HTMLPart'    => $email->getHtmlBody(),
+            'From'             => $this->formatAddress($envelope->getSender()),
+            'To'               => $this->formatAddresses($this->getRecipients($email, $envelope)),
+            'Subject'          => $email->getSubject(),
+            'Attachments'      => $attachments,
+            'TextPart'         => $email->getTextBody(),
+            'HTMLPart'         => $email->getHtmlBody(),
+            'Variables'        => $tokens,
+            'TemplateLanguage' => true,
         ];
 
         if ($emails = $email->getCc()) {
@@ -268,5 +281,45 @@ final class MailjetApiTransport extends AbstractApiTransport
 
             throw new HttpTransportException($errorMessage, $response);
         }
+    }
+
+    /**
+     * @return array<string, int|string|bool>
+     */
+    private function prepareTokens(MauticMessage &$email): array
+    {
+        $metadata  = $email->getMetadata();
+        $retTokens = [];
+
+        if (!empty($metadata)) {
+            $metadataSet  = current($metadata);
+            $tokens       = (!empty($metadataSet['tokens'])) ? $metadataSet['tokens'] : [];
+            $mauticTokens = array_keys($tokens);
+
+            $mergeVarPlaceholders = [];
+
+            $toAddresses = $email->getTo();
+            $toAddress   = reset($toAddresses);
+            $address     = $toAddress->getAddress();
+
+            foreach ($mauticTokens as $token) {
+                $newToken                      = strtoupper(preg_replace('/[^a-z0-9]+/i', '', $token));
+                $mergeVarPlaceholders[$token]  = sprintf('{{var:%s}}', $newToken);
+                $retTokens[$newToken]          = $metadata[$address]['tokens'][$token];
+            }
+
+            if (!empty($mauticTokens)) {
+                MailHelper::searchReplaceTokens($mauticTokens, $mergeVarPlaceholders, $email);
+            }
+
+            // We need to replace the token as per the Mailjet personalization requirement.
+            // If there is token used in subject  e.g. "Hello {contactfield=firstname},"
+            // we should make the Mailjet way.
+            if (isset($retTokens['SUBJECT'])) {
+                $retTokens['SUBJECT'] = $email->getSubject();
+            }
+        }
+
+        return $retTokens;
     }
 }
