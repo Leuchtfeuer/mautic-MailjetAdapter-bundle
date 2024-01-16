@@ -165,6 +165,11 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $message['Headers'] = $headers;
         }
 
+        // Add CustomID
+        if ($email->getLeadIdHash()) {
+            $message['CustomID'] = $email->getLeadIdHash().'-'.current($email->getTo())->getAddress();
+        }
+
         return [
             'Messages'    => [$message],
             'SandBoxMode' => $this->sandbox,
@@ -224,11 +229,6 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             }
 
             $headers[$header->getName()] = $header->getBodyAsString();
-        }
-
-        // Add CustomID
-        if ($message->getLeadIdHash()) {
-            $headers['CustomID'] = $message->getLeadIdHash().'-'.current($message->getTo())->getAddress();
         }
 
         return $headers;

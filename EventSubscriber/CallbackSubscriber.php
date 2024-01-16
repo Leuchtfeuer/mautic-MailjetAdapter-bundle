@@ -9,6 +9,7 @@ use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Event\TransportWebhookEvent;
 use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\LeadBundle\Entity\DoNotContact;
+use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetSmtpTransport;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Response;
@@ -36,7 +37,7 @@ class CallbackSubscriber implements EventSubscriberInterface
     {
         $dsn = Dsn::fromString($this->coreParametersHelper->get('mailer_dsn'));
 
-        if (MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME !== $dsn->getScheme()) {
+        if (!in_array($dsn->getScheme(), [MailjetApiTransport::SCHEME, MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME])) {
             return;
         }
 
