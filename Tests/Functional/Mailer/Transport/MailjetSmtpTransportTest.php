@@ -15,7 +15,7 @@ final class MailjetSmtpTransportTest extends MauticMysqlTestCase
 {
     protected function setUp(): void
     {
-        $this->configParams['mailer_dsn']            = MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME.'://user:pass@host:25';
+        $this->configParams['mailer_dsn']            = MailjetSmtpTransport::SCHEME.'://user:pass@host:25';
         $this->configParams['messenger_dsn_email']   = 'sync://';
         $this->configParams['mailer_from_email']     = 'admin@mautic.test';
         $this->configParams['mailer_from_name']      = 'Admin';
