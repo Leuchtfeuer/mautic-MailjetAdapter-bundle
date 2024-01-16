@@ -1,3 +1,6 @@
+Mailjet Integration
+===================
+
 CONTENTS OF THIS FILE
 ---------------------
 
@@ -22,6 +25,8 @@ INSTALLATION
 
 CONFIGURATION
 -------------
+
+### Mautic 
 
 This plugin provide two transports,
 1. SMTP Relay:
@@ -50,7 +55,15 @@ Follow the steps to set up Mailjet DSN,
 
 The `<apiKey>` and `<secretKey>` will be used for authentication purposes. Please visit the [Mailjet Guide][MailjetGuidePage]
 
-On the Configuration page **Email DSN** should look like ![Email DSN](Docs/imgs/02%20-%20Email%20DSN.png "Email DSN") 
+On the Configuration page **Email DSN** should look like ![Email DSN](Docs/imgs/02%20-%20Email%20DSN.png "Email DSN")
+
+### Mailjet
+
+1. Create a [Mailjet account][MailjetSignup]
+2. Then [retrieve your API and Secret keys][RetrieveKeys]. They will be used for authentication purposes.
+3. Set up the webhook hook for event tracking from your account preferences, in the [Event Tracking section][EventTrackingSection]. The webhook URL should be `https://<your-domain.tld>/mailer/callback`.
+
+ 
 
 
 AUTHOR
@@ -64,3 +77,6 @@ AUTHOR
 
 [MailjetGuidePage]: <https://dev.mailjet.com/email/guides/getting-started/>
 [SendApiV31Home]: <https://dev.mailjet.com/email/guides/send-api-v31/>
+[MailjetSignup]: <https://app.mailjet.com/signup>
+[RetrieveKeys]: <https://app.mailjet.com/account/api_keys>
+[EventTrackingSection]: <https://app.mailjet.com/account/triggers>
