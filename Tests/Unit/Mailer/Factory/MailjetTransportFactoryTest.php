@@ -62,11 +62,11 @@ final class MailjetTransportFactoryTest extends TestCase
         yield 'SMTP when User and Password are null' => [
             // Dsn Details
             [
-                'scheme'   => MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME,
-                'host'     => MailjetSmtpTransport::MAILJET_HOST,
+                'scheme'   => MailjetSmtpTransport::SCHEME,
+                'host'     => MailjetSmtpTransport::HOST,
                 'user'     => null,
                 'password' => null,
-                'port'     => MailjetSmtpTransport::MAILJET_DEFAULT_PORT,
+                'port'     => MailjetSmtpTransport::DEFAULT_PORT,
             ],
             // expected
             [
@@ -79,11 +79,11 @@ final class MailjetTransportFactoryTest extends TestCase
         yield 'SMTP when Password is null' => [
             // Dsn Details
             [
-                'scheme'   => MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME,
-                'host'     => MailjetSmtpTransport::MAILJET_HOST,
+                'scheme'   => MailjetSmtpTransport::SCHEME,
+                'host'     => MailjetSmtpTransport::HOST,
                 'user'     => 'user',
                 'password' => null,
-                'port'     => MailjetSmtpTransport::MAILJET_DEFAULT_PORT,
+                'port'     => MailjetSmtpTransport::DEFAULT_PORT,
             ],
             // expected
             [
@@ -97,10 +97,10 @@ final class MailjetTransportFactoryTest extends TestCase
             // Dsn Details
             [
                 'scheme'   => 'wrong',
-                'host'     => MailjetSmtpTransport::MAILJET_HOST,
+                'host'     => MailjetSmtpTransport::HOST,
                 'user'     => 'user',
                 'password' => 'pass',
-                'port'     => MailjetSmtpTransport::MAILJET_DEFAULT_PORT,
+                'port'     => MailjetSmtpTransport::DEFAULT_PORT,
             ],
             // expected
             [

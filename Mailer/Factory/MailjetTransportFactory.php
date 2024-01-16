@@ -33,7 +33,7 @@ class MailjetTransportFactory extends AbstractTransportFactory
     {
         return [
             MailjetApiTransport::SCHEME,
-            MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME,
+            MailjetSmtpTransport::SCHEME,
         ];
     }
 
@@ -43,8 +43,8 @@ class MailjetTransportFactory extends AbstractTransportFactory
         $password = $this->getPassword($dsn);
         $sandbox  = filter_var($dsn->getOption('sandbox', false), \FILTER_VALIDATE_BOOL);
 
-        if (MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME === $dsn->getScheme() && $user && $password) {
-            return new MailjetSmtpTransport($user, $password, $dsn->getPort(MailjetSmtpTransport::MAILJET_DEFAULT_PORT), $this->dispatcher, $this->logger);
+        if (MailjetSmtpTransport::SCHEME === $dsn->getScheme() && $user && $password) {
+            return new MailjetSmtpTransport($user, $password, $dsn->getPort(MailjetSmtpTransport::DEFAULT_PORT), $this->dispatcher, $this->logger);
         }
 
         if (MailjetApiTransport::SCHEME === $dsn->getScheme() && $user && $password) {

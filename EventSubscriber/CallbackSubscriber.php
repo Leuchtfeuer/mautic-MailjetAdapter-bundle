@@ -37,7 +37,7 @@ class CallbackSubscriber implements EventSubscriberInterface
     {
         $dsn = Dsn::fromString($this->coreParametersHelper->get('mailer_dsn'));
 
-        if (!in_array($dsn->getScheme(), [MailjetApiTransport::SCHEME, MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME])) {
+        if (!in_array($dsn->getScheme(), [MailjetApiTransport::SCHEME, MailjetSmtpTransport::SCHEME])) {
             return;
         }
 
