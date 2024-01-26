@@ -1,9 +1,13 @@
 {
-    "name": "shinde-rahul/plugin-mailjet",
-    "description": "Mailjet Transporter for Mautic",
+    "name": "leuchtfeuer/mautic-MailjetAdapter-bundle",
+    "description": "Plugin allows sending emails with Mailjet in batches via API and callback handling used for bounce management.",
     "type": "mautic-plugin",
     "license": "GPL-3.0-or-later",
     "authors": [
+        {
+            "name": "Leuchtfeuer Digital Marketing GmbH",
+            "email": "mautic-plugins@Leuchtfeuer.com"
+        },
         {
             "name": "Rahul Shinde",
             "email": "shinde.r.a@gmail.com"

@@ -1,5 +1,5 @@
-Mailjet Integration
-===================
+Mailjet Adapter by Leuchtfeuer
+==============================
 
 CONTENTS OF THIS FILE
 ---------------------
