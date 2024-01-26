@@ -58,8 +58,22 @@ class CallbackSubscriber implements EventSubscriberInterface
 
         foreach ($events as $event) {
             if ('bounce' === $event['event'] || 'blocked' === $event['event']) {
-                $reason = $event['error_related_to'].': '.$event['error'];
-                $type   = DoNotContact::BOUNCED;
+                $type  = DoNotContact::BOUNCED;
+                $error = [];
+                if ('blocked' === $event['event']) {
+                    $error[] = 'BLOCKED';
+                }
+                elseif (true === $event['hard_bounce'] || '1' === $event['hard_bounce']) {
+                    $error[] = 'HARD';
+                }
+                else {
+                    $error[] = 'SOFT';
+                }
+
+                $error[] = !empty($event['error_related_to']) ? $event['error_related_to'] : '';
+                $error[] = !empty($event['error']) ? $event['error_related_to'] : '';
+
+                $reason = implode(': ', array_filter($error));
             } elseif ('spam' === $event['event']) {
                 $reason = 'User reported email as spam, source: '.$event['source'];
                 $type   = DoNotContact::UNSUBSCRIBED;
