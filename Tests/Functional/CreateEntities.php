@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MailjetBundle\Tests\Functional;
+namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Functional;
 
 use Mautic\AssetBundle\Entity\Asset;
 use Mautic\EmailBundle\Entity\Email;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MailjetBundle\Mailer\Transport;
+namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport;
 
 use Mautic\EmailBundle\Helper\MailHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;

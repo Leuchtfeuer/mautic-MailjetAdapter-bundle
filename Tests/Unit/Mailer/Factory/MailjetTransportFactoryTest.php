@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MailjetBundle\Tests\Unit\Mailer\Factory;
+namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Unit\Mailer\Factory;
 
 use Mautic\EmailBundle\Model\TransportCallback;
-use MauticPlugin\MailjetBundle\Mailer\Factory\MailjetTransportFactory;
-use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetApiTransport;
-use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetSmtpTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Factory\MailjetTransportFactory;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;

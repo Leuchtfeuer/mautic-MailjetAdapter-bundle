@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MailjetBundle\Mailer\Factory;
+namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Factory;
 
 use Mautic\EmailBundle\Model\TransportCallback;
-use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetApiTransport;
-use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetSmtpTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Mailer\Exception\UnsupportedSchemeException;

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MailjetBundle\Tests\Functional\Mailer\Transport;
+namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Functional\Mailer\Transport;
 
 use Mautic\CoreBundle\Helper\UserHelper;
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
-use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetApiTransport;
-use MauticPlugin\MailjetBundle\Tests\Functional\CreateEntities;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Functional\CreateEntities;
 use PHPUnit\Framework\Assert;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpClient\MockHttpClient;

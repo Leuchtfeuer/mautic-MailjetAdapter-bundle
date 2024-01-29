@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MailjetBundle\Tests\Functional\EventSubscriber;
+namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Functional\EventSubscriber;
 
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
 use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Entity\Stat;
 use Mautic\LeadBundle\Entity\DoNotContact;
 use Mautic\LeadBundle\Entity\Lead;
-use MauticPlugin\MailjetBundle\EventSubscriber\CallbackSubscriber;
-use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetSmtpTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\EventSubscriber\CallbackSubscriber;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
 use Symfony\Component\HttpFoundation\Request;
 
 final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase

@@ -24,7 +24,7 @@
         "integration"
     ],
     "extra": {
-        "install-directory-name": "MailjetBundle"
+        "install-directory-name": "LeuchtfeuerMailjetAdapterBundle"
     },
     "scripts": {
         "test": [
