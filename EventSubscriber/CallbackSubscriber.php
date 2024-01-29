@@ -71,7 +71,7 @@ class CallbackSubscriber implements EventSubscriberInterface
                 }
 
                 $error[] = !empty($event['error_related_to']) ? $event['error_related_to'] : '';
-                $error[] = !empty($event['error']) ? $event['error_related_to'] : '';
+                $error[] = !empty($event['error']) ? $event['error'] : '';
 
                 $reason = implode(': ', array_filter($error));
             } elseif ('spam' === $event['event']) {
