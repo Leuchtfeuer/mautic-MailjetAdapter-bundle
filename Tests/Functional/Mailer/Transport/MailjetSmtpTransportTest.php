@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MailjetBundle\Tests\Functional\Mailer\Transport;
+namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Functional\Mailer\Transport;
 
 use Mautic\CoreBundle\Helper\UserHelper;
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
 use Mautic\LeadBundle\Entity\Lead;
-use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetSmtpTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -15,7 +15,7 @@ final class MailjetSmtpTransportTest extends MauticMysqlTestCase
 {
     protected function setUp(): void
     {
-        $this->configParams['mailer_dsn']            = MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME.'://user:pass@host:25';
+        $this->configParams['mailer_dsn']            = MailjetSmtpTransport::SCHEME.'://user:pass@host:25';
         $this->configParams['messenger_dsn_email']   = 'sync://';
         $this->configParams['mailer_from_email']     = 'admin@mautic.test';
         $this->configParams['mailer_from_name']      = 'Admin';

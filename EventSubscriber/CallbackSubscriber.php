@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MailjetBundle\EventSubscriber;
+namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\EventSubscriber;
 
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Event\TransportWebhookEvent;
 use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\LeadBundle\Entity\DoNotContact;
-use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetSmtpTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\Transport\Dsn;
@@ -36,7 +37,7 @@ class CallbackSubscriber implements EventSubscriberInterface
     {
         $dsn = Dsn::fromString($this->coreParametersHelper->get('mailer_dsn'));
 
-        if (MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME !== $dsn->getScheme()) {
+        if (!in_array($dsn->getScheme(), [MailjetApiTransport::SCHEME, MailjetSmtpTransport::SCHEME])) {
             return;
         }
 
@@ -57,8 +58,25 @@ class CallbackSubscriber implements EventSubscriberInterface
 
         foreach ($events as $event) {
             if ('bounce' === $event['event'] || 'blocked' === $event['event']) {
-                $reason = $event['error_related_to'].': '.$event['error'];
-                $type   = DoNotContact::BOUNCED;
+                $type = DoNotContact::BOUNCED;
+                if ('blocked' === $event['event']) {
+                    $eventType = 'BLOCKED';
+                }
+                elseif (true === $event['hard_bounce'] || '1' === $event['hard_bounce']) {
+                    $eventType = 'HARD';
+                }
+                else {
+                    $eventType = 'SOFT';
+                }
+
+                $error = [
+                    $eventType,
+                    !empty($event['error_related_to']) ? $event['error_related_to'] : '',
+                    !empty($event['error']) ? $event['error'] : '',
+                    ('SOFT' === $eventType) ? (!empty($event['comment']) ? $event['comment'] : '') : '',
+                ];
+
+                $reason = implode(': ', array_filter($error));
             } elseif ('spam' === $event['event']) {
                 $reason = 'User reported email as spam, source: '.$event['source'];
                 $type   = DoNotContact::UNSUBSCRIBED;

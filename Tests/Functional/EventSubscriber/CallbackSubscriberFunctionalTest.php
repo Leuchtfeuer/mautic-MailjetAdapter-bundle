@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MailjetBundle\Tests\Functional\EventSubscriber;
+namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Functional\EventSubscriber;
 
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
+use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Entity\Stat;
 use Mautic\LeadBundle\Entity\DoNotContact;
 use Mautic\LeadBundle\Entity\Lead;
-use MauticPlugin\MailjetBundle\Mailer\Transport\MailjetSmtpTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\EventSubscriber\CallbackSubscriber;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
 use Symfony\Component\HttpFoundation\Request;
 
 final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
@@ -16,12 +18,21 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
     protected function setUp(): void
     {
         if ('testMailjetTransportWhenNoEmailDsnConfigured' !== $this->getName()) {
-            $this->configParams['mailer_dsn'] = MailjetSmtpTransport::MAUTIC_MAILJET_SMTP_SCHEME.'://user:pass@host:25';
+            $this->configParams['mailer_dsn'] = MailjetSmtpTransport::SCHEME.'://user:pass@host:25';
         }
 
         parent::setUp();
     }
 
+    public function testGetSubscribedEvents(): void
+    {
+        $this->assertEquals(
+            [
+                EmailEvents::ON_TRANSPORT_WEBHOOK => 'onTransportWebhookCallbackRequest',
+            ],
+            CallbackSubscriber::getSubscribedEvents()
+        );
+    }
     public function testMailjetTransportWhenNoEmailDsnConfigured(): void
     {
         $this->client->request(Request::METHOD_POST, '/mailer/callback');
@@ -51,6 +62,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         $this->em->flush();
 
         $param = $this->payloadStructure($type, $email, $hash);
+        $param['hard_bounce'] = true;
 
         $this->client->request(Request::METHOD_POST, '/mailer/callback', $param);
         $response = $this->client->getResponse();
@@ -58,7 +70,10 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         $this->assertSame('Callback processed', $response->getContent());
         $this->assertSame(200, $response->getStatusCode());
 
-        $result = $this->getCommentAndReason($type);
+        $result = [
+            'comments' => 'HARD: bounce: bounce',
+            'reason'   => DoNotContact::BOUNCED,
+        ];
 
         $openDetails = $stat->getOpenDetails();
         $bounces     = $openDetails['bounces'][0];
@@ -134,7 +149,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
      */
     private function payloadStructure(string $type, string $email, string $hash = ''): array
     {
-        return [
+        $returnArray = [
             'event'            => $type,
             'time'             => '1513975381',
             'MessageID'        => 0,
@@ -150,6 +165,12 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
             'error'            => $type,
             'source'           => 'spam button',
         ];
+
+        if ('bounce' === $type) {
+            $returnArray['hard_bounce'] = 'false';
+        }
+
+        return $returnArray;
     }
 
     /**
@@ -158,8 +179,12 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
     private function getCommentAndReason(string $type): array
     {
         return match ($type) {
-            'bounce', 'blocked' => [
-                'comments' => $type.': '.$type,
+            'blocked' => [
+                'comments' => 'BLOCKED: '.$type.': '.$type,
+                'reason'   => DoNotContact::BOUNCED,
+            ],
+            'bounce' => [
+                'comments' => 'SOFT: '.$type.': '.$type,
                 'reason'   => DoNotContact::BOUNCED,
             ],
             'spam' => [

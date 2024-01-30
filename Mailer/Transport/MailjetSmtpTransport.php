@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MailjetBundle\Mailer\Transport;
+namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport;
 
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -14,9 +14,9 @@ use Symfony\Component\Mime\RawMessage;
 
 class MailjetSmtpTransport extends EsmtpTransport
 {
-    public const MAILJET_HOST               = 'in-v3.mailjet.com';
-    public const MAILJET_DEFAULT_PORT       = 465;
-    public const MAUTIC_MAILJET_SMTP_SCHEME = 'mautic+mailjet+smtp';
+    public const HOST         = 'in-v3.mailjet.com';
+    public const DEFAULT_PORT = 465;
+    public const SCHEME       = 'mautic+mailjet+smtp';
 
     public function __construct(
         string $user,
@@ -25,7 +25,7 @@ class MailjetSmtpTransport extends EsmtpTransport
         EventDispatcherInterface $dispatcher = null,
         LoggerInterface $logger = null
     ) {
-        parent::__construct(self::MAILJET_HOST, $port, true, $dispatcher, $logger);
+        parent::__construct(self::HOST, $port, true, $dispatcher, $logger);
 
         $this->setUsername($user);
         $this->setPassword($password);

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace MauticPlugin\MailjetBundle\Tests\Unit\EventSubscriber;
+namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Unit\EventSubscriber;
 
 use Mautic\EmailBundle\EmailEvents;
-use MauticPlugin\MailjetBundle\EventSubscriber\CallbackSubscriber;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\EventSubscriber\CallbackSubscriber;
 use PHPUnit\Framework\TestCase;
 
 final class CallbackSubscriberFunctionalTest extends TestCase
