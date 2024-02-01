@@ -142,9 +142,12 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             'Attachments'      => $attachments,
             'TextPart'         => $email->getTextBody(),
             'HTMLPart'         => $email->getHtmlBody(),
-            'Variables'        => $tokens,
             'TemplateLanguage' => true,
         ];
+
+        if (!empty($tokens)) {
+            $message['Variables'] = $tokens;
+        }
 
         if ($emails = $email->getCc()) {
             $message['Cc'] = $this->formatAddresses($emails);

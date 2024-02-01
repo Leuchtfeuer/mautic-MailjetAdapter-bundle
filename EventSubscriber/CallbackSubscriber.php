@@ -61,11 +61,9 @@ class CallbackSubscriber implements EventSubscriberInterface
                 $type = DoNotContact::BOUNCED;
                 if ('blocked' === $event['event']) {
                     $eventType = 'BLOCKED';
-                }
-                elseif (true === $event['hard_bounce'] || '1' === $event['hard_bounce']) {
+                } elseif (true === $event['hard_bounce'] || '1' === $event['hard_bounce']) {
                     $eventType = 'HARD';
-                }
-                else {
+                } else {
                     $eventType = 'SOFT';
                 }
 

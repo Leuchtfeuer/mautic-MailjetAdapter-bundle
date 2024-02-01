@@ -33,6 +33,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
             CallbackSubscriber::getSubscribedEvents()
         );
     }
+
     public function testMailjetTransportWhenNoEmailDsnConfigured(): void
     {
         $this->client->request(Request::METHOD_POST, '/mailer/callback');
@@ -61,7 +62,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
 
         $this->em->flush();
 
-        $param = $this->payloadStructure($type, $email, $hash);
+        $param                = $this->payloadStructure($type, $email, $hash);
         $param['hard_bounce'] = true;
 
         $this->client->request(Request::METHOD_POST, '/mailer/callback', $param);
