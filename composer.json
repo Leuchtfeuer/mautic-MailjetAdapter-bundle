@@ -1,5 +1,5 @@
 {
-    "name": "leuchtfeuer/mautic-MailjetAdapter-bundle",
+    "name": "leuchtfeuer/mautic-mailjetadapter-bundle",
     "description": "Plugin allows sending emails with Mailjet in batches via API and callback handling used for bounce management.",
     "type": "mautic-plugin",
     "license": "GPL-3.0-or-later",
@@ -26,6 +26,11 @@
     "extra": {
         "install-directory-name": "LeuchtfeuerMailjetAdapterBundle"
     },
+    "autoload": {
+        "psr-4": {
+            "MauticPlugin\\LeuchtfeuerMailjetAdapterBundle\\": ""
+        }
+    },
     "scripts": {
         "test": [
             "@phpunit",
@@ -42,5 +47,19 @@
         "csfixer": "../../bin/php-cs-fixer fix . -v --dry-run --diff --using-cache=no --config=../../.php-cs-fixer.php",
         "fixcs": "../../bin/php-cs-fixer fix . -v --using-cache=no --config=../../.php-cs-fixer.php",
         "phpstan": "[ ! -f ../../var/cache/test/AppKernelTestDebugContainer.xml ] && (echo 'Building test cache ...'; APP_ENV=test APP_DEBUG=1 ../../bin/console > /dev/null 2>&1); php -d memory_limit=4G ../../bin/phpstan analyse ."
-    }
+    },
+    "repositories": [
+        {
+            "type": "git",
+            "url": "https://github.com/mautic/FOSOAuthServerBundle.git"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/mautic/SpBundle.git"
+        },
+        {
+            "type": "git",
+            "url": "https://github.com/mautic/SymfonyBridgeBundle.git"
+        }
+    ]
 }
