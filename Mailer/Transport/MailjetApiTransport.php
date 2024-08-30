@@ -8,7 +8,6 @@ use Mautic\EmailBundle\Helper\MailHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportTrait;
-use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\LeadBundle\Entity\DoNotContact;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
@@ -50,7 +49,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         string $user,
         string $password,
         bool $sandbox,
-        private TransportCallback $callback,
+        private MailjetTransportCallback $callback,
         HttpClientInterface $client = null,
         EventDispatcherInterface $dispatcher = null,
         LoggerInterface $logger = null
