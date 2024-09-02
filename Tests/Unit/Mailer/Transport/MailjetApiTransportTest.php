@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Unit\Mailer\Transport;
 
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
-use Mautic\EmailBundle\Model\TransportCallback;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -35,7 +35,7 @@ final class MailjetApiTransportTest extends TestCase
         $this->responseMock          = $this->createMock(ResponseInterface::class);
         $this->envelopeMock          = $this->createMock(Envelope::class);
 
-        $transportCallbackMock = $this->createMock(TransportCallback::class);
+        $transportCallbackMock = $this->createMock(MailjetTransportCallback::class);
         $eventDispatcherMock   = $this->createMock(EventDispatcherInterface::class);
         $loggerMock            = $this->createMock(LoggerInterface::class);
 

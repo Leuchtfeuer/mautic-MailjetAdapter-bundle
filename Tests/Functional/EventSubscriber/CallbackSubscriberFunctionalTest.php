@@ -115,13 +115,13 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
 
             $this->assertSame($result['comments'], $bounces['reason']);
 
-            if ($type ==='bounce'){
+            if ('bounce' === $type) {
                 $this->assertSoftBounceDoNotContact($contact, $result);
             } else {
                 $this->assertDoNotContact($contact, $result);
             }
 
-            //$this->assertDoNotContact($contact, $result);
+            // $this->assertDoNotContact($contact, $result);
         }
     }
 
@@ -147,13 +147,13 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         foreach (['bounce', 'blocked', 'spam', 'unsub'] as $type) {
             $result = $this->getCommentAndReason($type);
 
-            if ($type ==='bounce'){
+            if ('bounce' === $type) {
                 $this->assertSoftBounceDoNotContact($contacts[$type], $result);
             } else {
                 $this->assertDoNotContact($contacts[$type], $result);
             }
 
-            //$this->assertDoNotContact($contacts[$type], $result);
+            // $this->assertDoNotContact($contacts[$type], $result);
         }
     }
 
@@ -251,7 +251,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         $this->assertSame($result['reason'], $dnc->getReason());
     }
 
-    private function assertSoftBounceDoNotContact(Lead $contact, array $result):void
+    private function assertSoftBounceDoNotContact(Lead $contact, array $result): void
     {
         $dnc = $contact->getDoNotContact()->current();
 

@@ -2,15 +2,16 @@
 
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport;
 
-use Mautic\EmailBundle\Model\EmailStatModel;
-use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\CoreBundle\Helper\DateTimeHelper;
 use Mautic\EmailBundle\Entity\Stat;
+use Mautic\EmailBundle\Model\EmailStatModel;
+use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\EmailBundle\MonitoredEmail\Search\ContactFinder;
 use Mautic\LeadBundle\Entity\DoNotContact as DNC;
 use Mautic\LeadBundle\Model\DoNotContact;
 
-class MailjetTransportCallback extends TransportCallback{
+class MailjetTransportCallback extends TransportCallback
+{
     public function __construct(
         private DoNotContact $dncModel,
         private ContactFinder $finder,
@@ -54,6 +55,7 @@ class MailjetTransportCallback extends TransportCallback{
             }
         }
     }
+
     /**
      * @param int      $dncReason
      * @param int|null $channelId

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Unit\Mailer\Factory;
 
-use Mautic\EmailBundle\Model\TransportCallback;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Factory\MailjetTransportFactory;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -23,7 +23,7 @@ final class MailjetTransportFactoryTest extends TestCase
 
     protected function setUp(): void
     {
-        $transportCallbackMock = $this->createMock(TransportCallback::class);
+        $transportCallbackMock = $this->createMock(MailjetTransportCallback::class);
         $eventDispatcherMock   = $this->createMock(EventDispatcherInterface::class);
         $httpClientMock        = $this->createMock(HttpClientInterface::class);
         $loggerMock            = $this->createMock(LoggerInterface::class);
@@ -113,8 +113,8 @@ final class MailjetTransportFactoryTest extends TestCase
         yield 'API when User and Password are null' => [
             // Dsn Details
             [
-                'scheme'   => MailjetAPITransport::SCHEME,
-                'host'     => MailjetAPITransport::HOST,
+                'scheme'   => MailjetApiTransport::SCHEME,
+                'host'     => MailjetApiTransport::HOST,
                 'user'     => null,
                 'password' => null,
                 'port'     => null,
@@ -123,15 +123,15 @@ final class MailjetTransportFactoryTest extends TestCase
             [
                 'exception'         => IncompleteDsnException::class,
                 'exception_message' => 'User is not set.',
-                'instance_of'       => MailjetAPITransport::class,
+                'instance_of'       => MailjetApiTransport::class,
             ],
         ];
 
         yield 'API when Password is null' => [
             // Dsn Details
             [
-                'scheme'   => MailjetAPITransport::SCHEME,
-                'host'     => MailjetAPITransport::HOST,
+                'scheme'   => MailjetApiTransport::SCHEME,
+                'host'     => MailjetApiTransport::HOST,
                 'user'     => 'user',
                 'password' => null,
                 'port'     => null,
@@ -140,7 +140,7 @@ final class MailjetTransportFactoryTest extends TestCase
             [
                 'exception'         => IncompleteDsnException::class,
                 'exception_message' => 'Password is not set.',
-                'instance_of'       => MailjetAPITransport::class,
+                'instance_of'       => MailjetApiTransport::class,
             ],
         ];
 
@@ -148,7 +148,7 @@ final class MailjetTransportFactoryTest extends TestCase
             // Dsn Details
             [
                 'scheme'   => 'wrong',
-                'host'     => MailjetAPITransport::HOST,
+                'host'     => MailjetApiTransport::HOST,
                 'user'     => 'user',
                 'password' => 'pass',
                 'port'     => null,
