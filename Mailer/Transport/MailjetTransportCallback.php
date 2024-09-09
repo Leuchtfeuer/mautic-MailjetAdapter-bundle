@@ -30,11 +30,7 @@ class MailjetTransportCallback extends TransportCallback
 
             $email   = $stat->getEmail();
             foreach ($contacts as $contact) {
-                if (str_starts_with($comments, 'SOFT')) {
-                    $channel = 'mailjet';
-                } else {
-                    $channel = ($email) ? ['email' => $email->getId()] : 'email';
-                }
+                $channel = $this->getChannelForHashId($comments, $email);
                 $this->dncModel->addDncForContact($contact->getId(), $channel, $dncReason, $comments);
             }
         }
@@ -46,11 +42,7 @@ class MailjetTransportCallback extends TransportCallback
 
         if ($contacts = $result->getContacts()) {
             foreach ($contacts as $contact) {
-                if (str_starts_with($comments, 'SOFT')) {
-                    $channel = 'mailjet';
-                } else {
-                    $channel = ($channelId) ? ['email' => $channelId] : 'email';
-                }
+                $channel = $this->getChannelForAddressOrContact($comments, $channelId);
                 $this->dncModel->addDncForContact($contact->getId(), $channel, $dncReason, $comments);
             }
         }
@@ -62,15 +54,29 @@ class MailjetTransportCallback extends TransportCallback
      */
     public function addFailureByContactId($id, $comments, $dncReason = DNC::BOUNCED, $channelId = null): void
     {
-        if (str_starts_with($comments, 'SOFT')) {
-            $channel = 'mailjet';
-        } else {
-            $channel = ($channelId) ? ['email' => $channelId] : 'email';
-        }
+        $channel = $this->getChannelForAddressOrContact($comments, $channelId);
         $this->dncModel->addDncForContact($id, $channel, $dncReason, $comments);
     }
 
-    private function updateStatDetails(Stat $stat, $comments, $dncReason): void
+    private function getChannelForAddressOrContact(string $comments, ?int $channelId): array|string
+    {
+        if (str_starts_with($comments, 'SOFT')) {
+            return 'mailjet';
+        }
+
+        return $channelId ? ['email' => $channelId] : 'email';
+    }
+
+    private function getChannelForHashId(string $comments, $email): array|string
+    {
+        if (str_starts_with($comments, 'SOFT')) {
+            return 'mailjet';
+        }
+
+        return $email ? ['email' => $email->getId()] : 'email';
+    }
+
+    private function updateStatDetails(Stat $stat, string $comments, int $dncReason): void
     {
         if (DNC::BOUNCED === $dncReason) {
             $stat->setIsFailed(true);

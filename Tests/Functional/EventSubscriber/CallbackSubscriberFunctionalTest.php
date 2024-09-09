@@ -120,8 +120,6 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
             } else {
                 $this->assertDoNotContact($contact, $result);
             }
-
-            // $this->assertDoNotContact($contact, $result);
         }
     }
 
@@ -152,8 +150,6 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
             } else {
                 $this->assertDoNotContact($contacts[$type], $result);
             }
-
-            // $this->assertDoNotContact($contacts[$type], $result);
         }
     }
 
