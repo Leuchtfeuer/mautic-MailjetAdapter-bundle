@@ -3,6 +3,7 @@
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport;
 
 use Mautic\CoreBundle\Helper\DateTimeHelper;
+use Mautic\EmailBundle\Entity\Email;
 use Mautic\EmailBundle\Entity\Stat;
 use Mautic\EmailBundle\Model\EmailStatModel;
 use Mautic\EmailBundle\Model\TransportCallback;
@@ -20,6 +21,11 @@ class MailjetTransportCallback extends TransportCallback
         parent::__construct($dncModel, $finder, $emailStatModel);
     }
 
+    /**
+     * @param string $hashId
+     * @param string $comments
+     * @param int    $dncReason
+     */
     public function addFailureByHashId($hashId, $comments, $dncReason = DNC::BOUNCED): void
     {
         $result = $this->finder->findByHash($hashId);
@@ -51,6 +57,8 @@ class MailjetTransportCallback extends TransportCallback
     /**
      * @param int      $dncReason
      * @param int|null $channelId
+     * @param string   $comments
+     * @param int      $id
      */
     public function addFailureByContactId($id, $comments, $dncReason = DNC::BOUNCED, $channelId = null): void
     {
@@ -58,22 +66,39 @@ class MailjetTransportCallback extends TransportCallback
         $this->dncModel->addDncForContact($id, $channel, $dncReason, $comments);
     }
 
+    /**
+     * @return array<string, int>|string
+     */
     private function getChannelForAddressOrContact(string $comments, ?int $channelId): array|string
     {
         if (str_starts_with($comments, 'SOFT')) {
             return 'mailjet';
         }
 
-        return $channelId ? ['email' => $channelId] : 'email';
+        $mailArray = [
+            'email' => $channelId,
+        ];
+
+        return $channelId ? $mailArray : 'email';
     }
 
-    private function getChannelForHashId(string $comments, $email): array|string
+    /**
+     * @param string $comments
+     * @param Email  $email
+     *
+     * @return array<string, int>|string
+     */
+    private function getChannelForHashId($comments, $email): array|string
     {
         if (str_starts_with($comments, 'SOFT')) {
             return 'mailjet';
         }
 
-        return $email ? ['email' => $email->getId()] : 'email';
+        $mailArray = [
+            'email' => $email->getId(),
+        ];
+
+        return $mailArray;
     }
 
     private function updateStatDetails(Stat $stat, string $comments, int $dncReason): void

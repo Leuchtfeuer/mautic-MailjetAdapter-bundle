@@ -247,6 +247,9 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         $this->assertSame($result['reason'], $dnc->getReason());
     }
 
+    /**
+     * @param array<string, string|int> $result
+     */
     private function assertSoftBounceDoNotContact(Lead $contact, array $result): void
     {
         $dnc = $contact->getDoNotContact()->current();

@@ -267,7 +267,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             if (isset($metadata[$emailAddress]['leadId'])) {
                 $emailId = !empty($metadata[$emailAddress]['emailId']) ? (int) $metadata[$emailAddress]['emailId'] : null;
                 $this->callback->addFailureByContactId(
-                    $metadata[$emailAddress]['leadId'],
+                    (int) $metadata[$emailAddress]['leadId'],
                     $errorMessage,
                     DoNotContact::BOUNCED,
                     $emailId
