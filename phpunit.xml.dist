@@ -11,6 +11,7 @@
          failOnRisky="true"
          failOnWarning="true"
          processIsolation="false"
+         bootstrap="Tests/bootstrap.php"
          stopOnFailure="false">
   <coverage>
     <include>
