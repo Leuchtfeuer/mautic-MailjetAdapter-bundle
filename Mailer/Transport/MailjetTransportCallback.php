@@ -94,6 +94,10 @@ class MailjetTransportCallback extends TransportCallback
             return 'mailjet';
         }
 
+        if (null == $email) {
+            return 'email';
+        }
+
         $mailArray = [
             'email' => $email->getId(),
         ];
