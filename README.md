@@ -18,7 +18,7 @@ This plugin enable Mautic 5 to run Mailjet as a email transport.
 REQUIREMENTS
 ------------
 - Mautic 5.x (minimum 5.1)
-- PHP 8.1 or higher
+- PHP 8.0 or higher
 
 INSTALLATION
 ------------
