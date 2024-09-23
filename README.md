@@ -39,10 +39,10 @@ This plugin provide two transports,
 2. Email API:
    The Mailjet API is organized around REST. For more visit [Send API v3.1][SendApiV31Home].
 
-|            | DSN (Data Source Name)                                                               | 
-|------------|--------------------------------------------------------------------------------------|
-| SMTP Relay | `'mailer_dsn' => 'mautic+mailjet+smtp://<apiKey>:<secretKey>@default:465',`          |
-| Email API  | `'mailer_dsn' => 'mautic+mailjet+api://<apiKey>:<secretKey>@default:465?sandbox=1',` |
+|            | DSN (Data Source Name)                                                      | 
+|------------|-----------------------------------------------------------------------------|
+| SMTP Relay | `'mailer_dsn' => 'mautic+mailjet+smtp://<apiKey>:<secretKey>@default:465',` |
+| Email API  | `'mailer_dsn' => 'mautic+mailjet+api://<apiKey>:<secretKey>@default:465',`  |
 
 
 Follow the steps to set up Mailjet DSN,
@@ -71,13 +71,14 @@ On the Configuration page **Email DSN** should look like ![Email DSN](Docs/imgs/
  
 
 
-AUTHOR
+AUTHOR AND CONTACT
 ------
 
-👤 **Rahul Shinde**
+Leuchtfeuer Digital Marketing GmbH
 
-- Twitter: [@_rahulshinde](https://twitter.com/_rahulshinde)
-- GitHub: [@shinde-rahul](https://github.com/shinde-rahul)
+Please raise any issues in GitHub.
+
+For all other things, please email mautic-plugins@Leuchtfeuer.com
 
 
 [MailjetGuidePage]: <https://dev.mailjet.com/email/guides/getting-started/>
