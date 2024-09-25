@@ -7,10 +7,10 @@ namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\EventSubscriber;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Event\TransportWebhookEvent;
-use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\LeadBundle\Entity\DoNotContact;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\Transport\Dsn;
@@ -18,7 +18,7 @@ use Symfony\Component\Mailer\Transport\Dsn;
 class CallbackSubscriber implements EventSubscriberInterface
 {
     public function __construct(
-        private TransportCallback $transportCallback,
+        private MailjetTransportCallback $transportCallback,
         private CoreParametersHelper $coreParametersHelper
     ) {
     }
@@ -85,7 +85,7 @@ class CallbackSubscriber implements EventSubscriberInterface
                 continue;
             }
 
-            if (isset($event['CustomID']) && '' !== $event['CustomID'] && false !== strpos($event['CustomID'], '-', 0)) {
+            if (isset($event['CustomID']) && '' !== $event['CustomID'] && str_contains($event['CustomID'], '-')) {
                 $fistDashPos = strpos($event['CustomID'], '-', 0);
                 $leadIdHash  = substr($event['CustomID'], 0, $fistDashPos);
                 $leadEmail   = substr($event['CustomID'], $fistDashPos + 1, strlen($event['CustomID']));

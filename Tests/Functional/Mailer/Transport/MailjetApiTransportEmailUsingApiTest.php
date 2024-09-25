@@ -66,7 +66,7 @@ final class MailjetApiTransportEmailUsingApiTest extends MauticMysqlTestCase
         /** @phpstan-ignore-next-line */
         $this->assertSame('john@doe.email', $email->getMetadata()['john@doe.email']['tokens']['{contactfield=email}']);
         $this->assertCount(1, $email->getFrom());
-        $this->assertSame('hello@doe.com', $email->getFrom()[0]->getAddress());
+        $this->assertSame('admin@mautic.test', $email->getFrom()[0]->getAddress());
         $this->assertCount(1, $email->getTo());
         $this->assertSame('John', $email->getTo()[0]->getName());
         $this->assertSame($lead->getEmail(), $email->getTo()[0]->getAddress());

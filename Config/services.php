@@ -5,7 +5,7 @@ declare(strict_types=1);
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Factory\MailjetTransportFactory;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 
-return static function (ContainerConfigurator $configurator) {
+return static function (ContainerConfigurator $configurator): void {
     $services = $configurator->services()
         ->defaults()
         ->autowire()

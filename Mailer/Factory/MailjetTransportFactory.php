@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Factory;
 
-use Mautic\EmailBundle\Model\TransportCallback;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
+use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Mailer\Exception\UnsupportedSchemeException;
@@ -18,7 +18,7 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class MailjetTransportFactory extends AbstractTransportFactory
 {
     public function __construct(
-        private TransportCallback $transportCallback,
+        private MailjetTransportCallback $transportCallback,
         EventDispatcherInterface $eventDispatcher,
         HttpClientInterface $client = null,
         LoggerInterface $logger = null
