@@ -34,6 +34,9 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         );
     }
 
+    /**
+     * Email dns is not set in this function because of an if condition in the setup function.
+     */
     public function testMailjetTransportWhenNoEmailDsnConfigured(): void
     {
         $this->client->request(Request::METHOD_POST, '/mailer/callback');
@@ -52,7 +55,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         $this->assertSame(404, $response->getStatusCode());
     }
 
-    public function testMailjetTransportCallbackWithOneBouncePayload(): void
+    public function testMailjetTransportCallbackWithOneHardBouncePayload(): void
     {
         $type    = 'bounce';
         $email   = $type.'@mautic.test';
@@ -81,6 +84,37 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         $this->assertSame($result['comments'], $bounces['reason']);
 
         $this->assertDoNotContact($contact, $result);
+    }
+
+    public function testMailjetTransportCallbackWithOneSoftBouncePayload(): void
+    {
+        $type    = 'bounce';
+        $email   = $type.'@mautic.test';
+        $contact = $this->createContact($email);
+        $hash    = '1123asda13';
+        $stat    = $this->createStat($contact, $email, $hash);
+
+        $this->em->flush();
+
+        $param                = $this->payloadStructure($type, $email, $hash);
+        $param['hard_bounce'] = false;
+
+        $this->client->request(Request::METHOD_POST, '/mailer/callback', $param);
+        $response = $this->client->getResponse();
+
+        $this->assertSame('Callback processed', $response->getContent());
+        $this->assertSame(200, $response->getStatusCode());
+
+        $result = [
+            'comments' => 'SOFT: bounce: bounce',
+            'reason'   => DoNotContact::BOUNCED,
+        ];
+
+        $openDetails = $stat->getOpenDetails();
+        $bounces     = $openDetails['bounces'][0];
+        $this->assertSame($result['comments'], $bounces['reason']);
+
+        $this->assertSoftBounceDoNotContact($contact, $result);
     }
 
     public function testCallbackProcessByHashId(): void

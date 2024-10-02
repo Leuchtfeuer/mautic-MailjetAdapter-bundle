@@ -255,6 +255,8 @@ final class MailjetApiTransportTest extends TestCase
         $mauticMessage->bcc(new Address('bcc@mautic.com', 'BCC Name'));
         $mauticMessage->updateLeadIdHash('LeadHash');
         $mauticMessage->addMetadata('to@mautic.com', ['leadId' => '123']);
+        $mauticMessage->subject('abc');
+        $mauticMessage->addMetadata('to@mautic.com', ['hashId' => '1234']);
 
         return $mauticMessage;
     }

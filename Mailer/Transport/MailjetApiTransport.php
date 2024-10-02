@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport;
 
-use Mautic\EmailBundle\Helper\MailHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportTrait;
@@ -81,18 +80,14 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     protected function doSendApi(SentMessage $sentMessage, Email $email, Envelope $envelope): ResponseInterface
     {
         try {
-            // Build payload
             $payload = $this->preparePayload($email, $envelope);
 
-            // Post payload
             $response = $this->sendMessage($payload);
 
-            // Log the payload.
             $this->processResponse($response, $email, $payload);
         } catch (\Exception $e) {
             throw new TransportException($e->getMessage());
         }
-
 
         return $response;
     }
@@ -102,8 +97,6 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
      *
      * @throws TransportExceptionInterface
      */
-
-
     private function sendMessage(array $payload): ResponseInterface
     {
         return $this->client->request(
@@ -129,18 +122,18 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         }
 
         $metadata = $email->getMetadata();
-        $message = [];
+        $message  = [];
         foreach ($metadata as $leadEmail => $leadData) {
             $to = [
                 [
                     'Email' => $leadEmail,
-                    'Name' => $leadData['name'] ?? '',
-                ]
+                    'Name'  => $leadData['name'] ?? '',
+                ],
             ];
             $leadData['leadEmail'] = $leadEmail;
 
-            $attachments = $this->prepareAttachments($email);
-            $newTokens = $this->prepareTokenFromLeadMetadata($email, $leadData);
+            $attachments   = $this->prepareAttachments($email);
+            $newTokens     = $this->prepareTokenFromLeadMetadata($email, $leadData);
             $emailData     = [
                 'From'             => $this->formatAddress($envelope->getSender()),
                 'To'               => $to,
@@ -184,21 +177,6 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             'Messages'    => $message,
             'SandBoxMode' => $this->sandbox,
         ];
-    }
-
-    private function getAllRecipientsFromMetadata(MauticMessage $email): array
-    {
-        $metadata = $email->getMetadata();
-        $allRecipients = [];
-
-        foreach ($metadata as $emailAddress => $data) {
-            $allRecipients[] = [
-                'Email' => $emailAddress,
-                'Name' => $data['name'] ?? '',
-            ];
-        }
-
-        return $allRecipients;
     }
 
     /**
@@ -308,71 +286,36 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         }
     }
 
-    private function prepareTokenFromLeadMetadata(Email $email, array $leadMetadata)
+    /**
+     * @param array<string, mixed> $leadMetadata
+     *
+     * @return array<string, string>
+     */
+    private function prepareTokenFromLeadMetadata(Email $email, array $leadMetadata): array
     {
         $retTokens = [];
-        $tokens = (!empty($leadMetadata['tokens'])) ? $leadMetadata['tokens'] : [];
+        $tokens    = (!empty($leadMetadata['tokens'])) ? $leadMetadata['tokens'] : [];
 
         foreach ($tokens as $token => $value) {
-            $newToken = strtoupper(preg_replace('/[^a-z0-9]+/i', '', $token));
+            $newToken             = strtoupper(preg_replace('/[^a-z0-9]+/i', '', $token));
             $retTokens[$newToken] = $value;
         }
 
         // Replace tokens in subject, TextPart, and HTMLPart
-        $subject = $email->getSubject();
+        $subject  = $email->getSubject();
         $textPart = $email->getTextBody();
         $htmlPart = $email->getHtmlBody();
 
         foreach ($tokens as $token => $value) {
-            $mailjetToken = '{{var:' . strtoupper(preg_replace('/[^a-z0-9]+/i', '', $token)) . '}}';
-            $subject = str_replace($token, $mailjetToken, $subject);
-            $textPart = str_replace($token, $mailjetToken, $textPart);
-            $htmlPart = str_replace($token, $mailjetToken, $htmlPart);
+            $mailjetToken = '{{var:'.strtoupper(preg_replace('/[^a-z0-9]+/i', '', $token)).'}}';
+            $subject      = str_replace($token, $mailjetToken, $subject);
+            $textPart     = str_replace($token, $mailjetToken, $textPart);
+            $htmlPart     = str_replace($token, $mailjetToken, $htmlPart);
         }
 
         $email->subject($subject);
         $email->text($textPart);
         $email->html($htmlPart);
-
-        return $retTokens;
-    }
-
-    /**
-     * @return array<string, int|string|bool>
-     */
-    private function prepareTokens(MauticMessage &$email): array
-    {
-        $metadata  = $email->getMetadata();
-        $retTokens = [];
-
-        if (!empty($metadata)) {
-            $metadataSet  = current($metadata);
-            $tokens       = (!empty($metadataSet['tokens'])) ? $metadataSet['tokens'] : [];
-            $mauticTokens = array_keys($tokens);
-
-            $mergeVarPlaceholders = [];
-
-            $toAddresses = $email->getTo();
-            $toAddress   = reset($toAddresses);
-            $address     = $toAddress->getAddress();
-
-            foreach ($mauticTokens as $token) {
-                $newToken                      = strtoupper(preg_replace('/[^a-z0-9]+/i', '', $token));
-                $mergeVarPlaceholders[$token]  = sprintf('{{var:%s}}', $newToken);
-                $retTokens[$newToken]          = $metadata[$address]['tokens'][$token];
-            }
-
-            if (!empty($mauticTokens)) {
-                MailHelper::searchReplaceTokens($mauticTokens, $mergeVarPlaceholders, $email);
-            }
-
-            // We need to replace the token as per the Mailjet personalization requirement.
-            // If there is token used in subject  e.g. "Hello {contactfield=firstname},"
-            // we should make the Mailjet way.
-            if (isset($retTokens['SUBJECT'])) {
-                $retTokens['SUBJECT'] = $email->getSubject();
-            }
-        }
 
         return $retTokens;
     }
