@@ -122,6 +122,22 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         }
 
         $metadata = $email->getMetadata();
+        if (is_array($metadata) && count($metadata) > 0) {
+            $payload = $this->preparePayloadFromMetadata($metadata, $email, $envelope);
+        } else {
+            $payload = $this->preparePayloadFromTestMail($email, $envelope);
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $metadata
+     *
+     * @return array<string, array<int, array<string, mixed>>|bool>
+     */
+    public function preparePayloadFromMetadata(array $metadata, MauticMessage $email, Envelope $envelope): array
+    {
         $message  = [];
         foreach ($metadata as $leadEmail => $leadData) {
             $to = [
@@ -175,6 +191,34 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
 
         return [
             'Messages'    => $message,
+            'SandBoxMode' => $this->sandbox,
+        ];
+    }
+
+    /**
+     * @return array<string, array<int, array<string, mixed>>|bool>
+     */
+    public function preparePayloadFromTestMail(MauticMessage $email, Envelope $envelope): array
+    {
+        $message     = [
+            'From'             => $this->formatAddress($envelope->getSender()),
+            'To'               => $this->formatAddresses($this->getRecipients($email, $envelope)),
+            'Subject'          => $email->getSubject(),
+            'TextPart'         => $email->getTextBody(),
+            'HTMLPart'         => $email->getHtmlBody(),
+            'TemplateLanguage' => true,
+        ];
+
+        if ($headers = $this->prepareHeaders($email)) {
+            $message['Headers'] = $headers;
+        }
+
+        if ($email->getLeadIdHash()) {
+            $message['CustomID'] = $email->getLeadIdHash().'-'.current($email->getTo())->getAddress();
+        }
+
+        return [
+            'Messages'    => [$message],
             'SandBoxMode' => $this->sandbox,
         ];
     }
