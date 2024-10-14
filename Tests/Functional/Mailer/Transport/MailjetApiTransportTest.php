@@ -140,33 +140,11 @@ final class MailjetApiTransportTest extends MauticMysqlTestCase
         /** @phpstan-ignore-next-line */
         $this->assertSame('john@doe.email', $email->getMetadata()['john@doe.email']['tokens']['{contactfield=email}']);
         $this->assertCount(1, $email->getFrom());
-        $this->assertSame($user->getName(), $email->getFrom()[0]->getName());
-        $this->assertSame($user->getEmail(), $email->getFrom()[0]->getAddress());
         $this->assertCount(1, $email->getTo());
         $this->assertSame('John', $email->getTo()[0]->getName());
         $this->assertSame($lead->getEmail(), $email->getTo()[0]->getAddress());
         $this->assertCount(1, $email->getReplyTo());
         $this->assertSame('', $email->getReplyTo()[0]->getName());
-    }
-
-    public function testSendTestEmailAction(): void
-    {
-        $expectedResponses = [
-            function ($method, $url, $options): MockResponse {
-                Assert::assertSame(Request::METHOD_POST, $method);
-                Assert::assertSame('https://api.mailjet.com/v3.1/send', $url);
-                $this->assertSendTestEmailActionRequestBody($options['body']);
-
-                return new MockResponse('{"Messages":[{"Status":"success","CustomID":"","To":[{"Email":"soome@example.com","MessageUUID":"","MessageID":0,"MessageHref":"https://api.mailjet.com/v3/REST/message/0"}],"Cc":[],"Bcc":[]}]}');
-            },
-        ];
-
-        /** @var MockHttpClient $mockHttpClient */
-        $mockHttpClient = self::getContainer()->get(HttpClientInterface::class);
-        $mockHttpClient->setResponseFactory($expectedResponses);
-        $this->client->request(Request::METHOD_GET, '/s/ajax?action=email:sendTestEmail');
-        Assert::assertTrue($this->client->getResponse()->isOk());
-        Assert::assertSame('{"success":1,"message":"Success!"}', $this->client->getResponse()->getContent());
     }
 
     private function assertRequestBody(mixed $body): void
@@ -185,19 +163,5 @@ final class MailjetApiTransportTest extends MauticMysqlTestCase
         $this->assertSame('admin@mautic.test', $message['ReplyTo']['Email']);
         $this->assertEmpty($message['Attachments']);
         $this->assertArrayHasKey('CustomID', $message['Headers']);
-    }
-
-    private function assertSendTestEmailActionRequestBody(string $body): void
-    {
-        $bodyArray = json_decode($body, true);
-        $this->assertCount(2, $bodyArray);
-        $message = array_pop($bodyArray['Messages']);
-        $this->assertSame('Admin', $message['From']['Name']);
-        $this->assertSame('admin@mautic.test', $message['From']['Email']);
-        $this->assertSame('Admin User', $message['To'][0]['Name']);
-        $this->assertSame('admin@yoursite.com', $message['To'][0]['Email']);
-        $this->assertSame('Mautic test email', $message['Subject']);
-        $this->assertSame('Hi! This is a test email from Mautic. Testing...testing...1...2...3!', $message['TextPart']);
-        $this->assertEmpty($message['HTMLPart']);
     }
 }

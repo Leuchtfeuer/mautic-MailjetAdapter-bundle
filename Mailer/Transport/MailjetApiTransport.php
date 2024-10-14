@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport;
 
-use Mautic\EmailBundle\Helper\MailHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportTrait;
@@ -81,13 +80,10 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     protected function doSendApi(SentMessage $sentMessage, Email $email, Envelope $envelope): ResponseInterface
     {
         try {
-            // Build payload
             $payload = $this->preparePayload($email, $envelope);
 
-            // Post payload
             $response = $this->sendMessage($payload);
 
-            // Log the payload.
             $this->processResponse($response, $email, $payload);
         } catch (\Exception $e) {
             throw new TransportException($e->getMessage());
@@ -125,42 +121,98 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             throw new TransportException(sprintf('Message must be an instance of %s', MauticMessage::class));
         }
 
-        $attachments = $this->prepareAttachments($email);
-        $tokens      = $this->prepareTokens($email);
+        $metadata = $email->getMetadata();
+        if (is_array($metadata) && count($metadata) > 0) {
+            $payload = $this->preparePayloadFromMetadata($metadata, $email, $envelope);
+        } else {
+            $payload = $this->preparePayloadFromTestMail($email, $envelope);
+        }
+
+        return $payload;
+    }
+
+    /**
+     * @param array<string, array<string, mixed>> $metadata
+     *
+     * @return array<string, array<int, array<string, mixed>>|bool>
+     */
+    public function preparePayloadFromMetadata(array $metadata, MauticMessage $email, Envelope $envelope): array
+    {
+        $message  = [];
+        foreach ($metadata as $leadEmail => $leadData) {
+            $to = [
+                [
+                    'Email' => $leadEmail,
+                    'Name'  => $leadData['name'] ?? '',
+                ],
+            ];
+            $leadData['leadEmail'] = $leadEmail;
+
+            $attachments   = $this->prepareAttachments($email);
+            $newTokens     = $this->prepareTokenFromLeadMetadata($email, $leadData);
+            $emailData     = [
+                'From'             => $this->formatAddress($envelope->getSender()),
+                'To'               => $to,
+                'Subject'          => $email->getSubject(),
+                'Attachments'      => $attachments,
+                'TextPart'         => $email->getTextBody(),
+                'HTMLPart'         => $email->getHtmlBody(),
+                'TemplateLanguage' => true,
+            ];
+
+            if (!empty($newTokens)) {
+                $emailData['Variables'] = $newTokens;
+            }
+
+            if ($emails = $email->getCc()) {
+                $emailData['Cc'] = $this->formatAddresses($emails);
+            }
+
+            if ($emails = $email->getBcc()) {
+                $emailData['Bcc'] = $this->formatAddresses($emails);
+            }
+
+            if ($emails = $email->getReplyTo()) {
+                if (1 < $length = \count($emails)) {
+                    throw new TransportException(sprintf('Mailjet\'s API only supports one Reply-To email, %d given.', $length));
+                }
+                $emailData['ReplyTo'] = $this->formatAddress($emails[0]);
+            }
+
+            if ($headers = $this->prepareHeaders($email)) {
+                $emailData['Headers'] = $headers;
+            }
+
+            if ($leadData['hashId']) {
+                $emailData['CustomID'] = $leadData['hashId'].'-'.$leadData['leadEmail'];
+            }
+            $message[] = $emailData;
+        }
+
+        return [
+            'Messages'    => $message,
+            'SandBoxMode' => $this->sandbox,
+        ];
+    }
+
+    /**
+     * @return array<string, array<int, array<string, mixed>>|bool>
+     */
+    public function preparePayloadFromTestMail(MauticMessage $email, Envelope $envelope): array
+    {
         $message     = [
             'From'             => $this->formatAddress($envelope->getSender()),
             'To'               => $this->formatAddresses($this->getRecipients($email, $envelope)),
             'Subject'          => $email->getSubject(),
-            'Attachments'      => $attachments,
             'TextPart'         => $email->getTextBody(),
             'HTMLPart'         => $email->getHtmlBody(),
             'TemplateLanguage' => true,
         ];
 
-        if (!empty($tokens)) {
-            $message['Variables'] = $tokens;
-        }
-
-        if ($emails = $email->getCc()) {
-            $message['Cc'] = $this->formatAddresses($emails);
-        }
-
-        if ($emails = $email->getBcc()) {
-            $message['Bcc'] = $this->formatAddresses($emails);
-        }
-
-        if ($emails = $email->getReplyTo()) {
-            if (1 < $length = \count($emails)) {
-                throw new TransportException(sprintf('Mailjet\'s API only supports one Reply-To email, %d given.', $length));
-            }
-            $message['ReplyTo'] = $this->formatAddress($emails[0]);
-        }
-
         if ($headers = $this->prepareHeaders($email)) {
             $message['Headers'] = $headers;
         }
 
-        // Add CustomID
         if ($email->getLeadIdHash()) {
             $message['CustomID'] = $email->getLeadIdHash().'-'.current($email->getTo())->getAddress();
         }
@@ -279,41 +331,35 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     }
 
     /**
-     * @return array<string, int|string|bool>
+     * @param array<string, mixed> $leadMetadata
+     *
+     * @return array<string, string>
      */
-    private function prepareTokens(MauticMessage &$email): array
+    private function prepareTokenFromLeadMetadata(Email $email, array $leadMetadata): array
     {
-        $metadata  = $email->getMetadata();
         $retTokens = [];
+        $tokens    = (!empty($leadMetadata['tokens'])) ? $leadMetadata['tokens'] : [];
 
-        if (!empty($metadata)) {
-            $metadataSet  = current($metadata);
-            $tokens       = (!empty($metadataSet['tokens'])) ? $metadataSet['tokens'] : [];
-            $mauticTokens = array_keys($tokens);
-
-            $mergeVarPlaceholders = [];
-
-            $toAddresses = $email->getTo();
-            $toAddress   = reset($toAddresses);
-            $address     = $toAddress->getAddress();
-
-            foreach ($mauticTokens as $token) {
-                $newToken                      = strtoupper(preg_replace('/[^a-z0-9]+/i', '', $token));
-                $mergeVarPlaceholders[$token]  = sprintf('{{var:%s}}', $newToken);
-                $retTokens[$newToken]          = $metadata[$address]['tokens'][$token];
-            }
-
-            if (!empty($mauticTokens)) {
-                MailHelper::searchReplaceTokens($mauticTokens, $mergeVarPlaceholders, $email);
-            }
-
-            // We need to replace the token as per the Mailjet personalization requirement.
-            // If there is token used in subject  e.g. "Hello {contactfield=firstname},"
-            // we should make the Mailjet way.
-            if (isset($retTokens['SUBJECT'])) {
-                $retTokens['SUBJECT'] = $email->getSubject();
-            }
+        foreach ($tokens as $token => $value) {
+            $newToken             = strtoupper(preg_replace('/[^a-z0-9]+/i', '', $token));
+            $retTokens[$newToken] = $value;
         }
+
+        // Replace tokens in subject, TextPart, and HTMLPart
+        $subject  = $email->getSubject();
+        $textPart = $email->getTextBody();
+        $htmlPart = $email->getHtmlBody();
+
+        foreach ($tokens as $token => $value) {
+            $mailjetToken = '{{var:'.strtoupper(preg_replace('/[^a-z0-9]+/i', '', $token)).'}}';
+            $subject      = str_replace($token, $mailjetToken, $subject);
+            $textPart     = str_replace($token, $mailjetToken, $textPart);
+            $htmlPart     = str_replace($token, $mailjetToken, $htmlPart);
+        }
+
+        $email->subject($subject);
+        $email->text($textPart);
+        $email->html($htmlPart);
 
         return $retTokens;
     }
