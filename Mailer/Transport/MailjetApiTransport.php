@@ -13,13 +13,11 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\Exception\HttpTransportException;
-use Symfony\Component\Mailer\Exception\RuntimeException;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mailer\Transport\AbstractApiTransport;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
-use Symfony\Component\Mime\MessageConverter;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
@@ -82,7 +80,6 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
      */
     protected function doSendApi(SentMessage $sentMessage, Email $email, Envelope $envelope): ResponseInterface
     {
-        $sentMessage->toIterable();
         try {
             // Build payload
             $payload = $this->preparePayload($email, $envelope);
@@ -97,24 +94,6 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         }
 
         return $response;
-    }
-
-    protected function doSendHttp(SentMessage $message): ResponseInterface
-    {
-        try {
-            $email = MessageConverter::toEmail($message->getOriginalMessage());
-        } catch (\Exception $e) {
-            throw new RuntimeException(sprintf('Unable to send message with the "%s" transport: ', __CLASS__).$e->getMessage(), 0, $e);
-        }
-
-        return $this->doSendApi($message, $email, $message->getEnvelope());
-    }
-
-    protected function getRecipients(Email $email, Envelope $envelope): array
-    {
-        return array_filter($envelope->getRecipients(), function (Address $address) use ($email): bool {
-            return false === \in_array($address, array_merge($email->getCc(), $email->getBcc()), true);
-        });
     }
 
     /**

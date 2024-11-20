@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Factory;
 
-use Mautic\EmailBundle\Mailer\Transport\TransportFactory;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
@@ -22,7 +21,7 @@ class MailjetTransportFactory extends AbstractTransportFactory
         private MailjetTransportCallback $transportCallback,
         EventDispatcherInterface $eventDispatcher,
         HttpClientInterface $client = null,
-        LoggerInterface $logger = null,
+        LoggerInterface $logger = null
     ) {
         parent::__construct($eventDispatcher, $client, $logger);
     }
