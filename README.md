@@ -25,7 +25,7 @@ INSTALLATION
 
 1. Get the plugin using `composer require leuchtfeuer/mautic-mailjetadapter-bundle`
 2. Install it using `php bin\console mautic:plugins:reload`.
-3. The plugin will start listing on plugin page. ![Plugins Page](Docs/imgs/01%20-%20Plugins%20Page.png)
+3. The plugin will start listing on plugin page.
 
 
 CONFIGURATION
