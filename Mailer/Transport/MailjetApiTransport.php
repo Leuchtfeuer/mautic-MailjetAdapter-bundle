@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport;
 
+use Doctrine\ORM\EntityManager;
+use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\Helper\MailHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
@@ -49,7 +51,9 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         private MailjetTransportCallback $callback,
         HttpClientInterface $client = null,
         EventDispatcherInterface $dispatcher = null,
-        LoggerInterface $logger = null
+        LoggerInterface $logger = null,
+        private CoreParametersHelper $coreParametersHelper,
+        private EntityManager $em,
     ) {
         parent::__construct($client, $dispatcher, $logger);
 
@@ -128,7 +132,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         $attachments = $this->prepareAttachments($email);
         $tokens      = $this->prepareTokens($email);
         $message     = [
-            'From'             => $this->formatAddress($envelope->getSender()),
+            'From'             => $this->formatAddress($this->getEmailFrom($email, $envelope)),
             'To'               => $this->formatAddresses($this->getRecipients($email, $envelope)),
             'Subject'          => $email->getSubject(),
             'Attachments'      => $attachments,
@@ -149,7 +153,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $message['Bcc'] = $this->formatAddresses($emails);
         }
 
-        if ($emails = $email->getReplyTo()) {
+        if ($emails = $this->getReplyTo($email)) {
             if (1 < $length = \count($emails)) {
                 throw new TransportException(sprintf('Mailjet\'s API only supports one Reply-To email, %d given.', $length));
             }
@@ -200,6 +204,53 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             'Email' => $address->getAddress(),
             'Name'  => $address->getName(),
         ];
+    }
+
+    private function getEmailFrom(Email $email, Envelope $envelope): ?Address
+    {
+
+        $metadata = $email->getMetadata();
+        $metadata = reset($metadata);
+        $entityEmailFrom = '';
+        $entityNameFrom = '';
+        if(isset($metadata['emailId']) && !empty($metadata['emailId'])){
+            $emailEntity = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
+            $entityEmailFrom = $emailEntity->getFromAddress();
+            $entityNameFrom = $emailEntity->getFromName();
+        }
+
+        $address = $envelope->getSender();
+        if (empty($entityEmailFrom)) {
+            $entityEmailFrom = $address->getAddress();
+        }
+
+        if (empty($entityNameFrom)) {
+            $entityNameFrom = $address->getName();
+        }
+
+        return new Address($entityEmailFrom, $entityNameFrom);
+
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function getReplyTo(Email $email): array
+    {
+        $metadata = $email->getMetadata();
+        $metadata = reset($metadata);
+        if(isset($metadata['emailId']) && !empty($metadata['emailId'])){
+            $emailEntity = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
+            $entityReplyTo = $emailEntity->getReplyToAddress();
+            if (!empty($entityReplyTo)) {
+                $entityReplyTo = explode(',', $entityReplyTo);
+                foreach ($entityReplyTo as $key => $value) {
+                    $entityReplyTo[$key] = new Address($value);
+                }
+                return $entityReplyTo;
+            }
+        }
+        return $email->getReplyTo();
     }
 
     /**
