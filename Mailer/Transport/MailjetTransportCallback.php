@@ -98,11 +98,9 @@ class MailjetTransportCallback extends TransportCallback
             return 'email';
         }
 
-        $mailArray = [
+        return [
             'email' => $email->getId(),
         ];
-
-        return $mailArray;
     }
 
     private function updateStatDetails(Stat $stat, string $comments, int $dncReason): void
