@@ -156,7 +156,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $attachments   = $this->prepareAttachments($email);
             $newTokens     = $this->prepareTokenFromLeadMetadata($email, $leadData);
             $emailData     = [
-                'From'             => $this->formatAddress($envelope->getSender()),
+                'From'             => $this->formatAddress($this->getEmailFrom($email, $envelope)),
                 'To'               => $to,
                 'Subject'          => $email->getSubject(),
                 'Attachments'      => $attachments,
@@ -177,7 +177,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
                 $emailData['Bcc'] = $this->formatAddresses($emails);
             }
 
-            if ($emails = $email->getReplyTo()) {
+            if ($emails = $this->getReplyTo($email)) {
                 if (1 < $length = \count($emails)) {
                     throw new TransportException(sprintf('Mailjet\'s API only supports one Reply-To email, %d given.', $length));
                 }
