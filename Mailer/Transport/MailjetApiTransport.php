@@ -62,7 +62,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
 
     public function getMaxBatchLimit(): int
     {
-        return 5000;
+        return 50;
     }
 
     public function __toString(): string
