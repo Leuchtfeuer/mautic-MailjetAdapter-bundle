@@ -37,8 +37,6 @@ final class MailjetApiTransportTest extends MauticMysqlTestCase
         $fields = [
             'config[emailconfig][mailer_dsn][scheme]'                  => MailjetApiTransport::SCHEME,
             'config[emailconfig][mailer_dsn][host]'                    => 'default',
-            'config[emailconfig][mailer_dsn][options][list][0][label]' => 'sandbox',
-            'config[emailconfig][mailer_dsn][options][list][0][value]' => 'true',
         ];
         $form = $crawler->selectButton('config[buttons][save]')->form();
 

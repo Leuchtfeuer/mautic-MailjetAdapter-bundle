@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Unit\Mailer\Transport;
 
+use Doctrine\ORM\EntityManager;
+use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
@@ -38,6 +40,8 @@ final class MailjetApiTransportTest extends TestCase
         $transportCallbackMock = $this->createMock(MailjetTransportCallback::class);
         $eventDispatcherMock   = $this->createMock(EventDispatcherInterface::class);
         $loggerMock            = $this->createMock(LoggerInterface::class);
+        $coreParameterHelper   = $this->createMock(CoreParametersHelper::class);
+        $entityManager         = $this->createMock(EntityManager::class);
 
         $this->transport = new MailjetApiTransport(
             'user',
@@ -46,7 +50,9 @@ final class MailjetApiTransportTest extends TestCase
             $transportCallbackMock,
             $this->httpClientMock,
             $eventDispatcherMock,
-            $loggerMock
+            $loggerMock,
+            $coreParameterHelper,
+            $entityManager
         );
     }
 
