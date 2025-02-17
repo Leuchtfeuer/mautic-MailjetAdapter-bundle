@@ -188,7 +188,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             }
 
             if ($leadData['hashId']) {
-                $emailData['CustomID'] = $leadData['hashId'].'-'.$leadData['leadEmail'];
+                $emailData['CustomID'] = $leadData['hashId'].'-'.md5($leadData['leadEmail']);
             }
             $message[] = $emailData;
         }
@@ -260,15 +260,14 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
 
     private function getEmailFrom(Email $email, Envelope $envelope): ?Address
     {
-
-        $metadata = $email->getMetadata();
-        $metadata = reset($metadata);
+        $metadata        = $email->getMetadata();
+        $metadata        = reset($metadata);
         $entityEmailFrom = '';
-        $entityNameFrom = '';
-        if(isset($metadata['emailId']) && !empty($metadata['emailId'])){
-            $emailEntity = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
+        $entityNameFrom  = '';
+        if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
+            $emailEntity     = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
             $entityEmailFrom = $emailEntity->getFromAddress();
-            $entityNameFrom = $emailEntity->getFromName();
+            $entityNameFrom  = $emailEntity->getFromName();
         }
 
         $address = $envelope->getSender();
@@ -281,7 +280,6 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         }
 
         return new Address($entityEmailFrom, $entityNameFrom);
-
     }
 
     /**
@@ -291,17 +289,19 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     {
         $metadata = $email->getMetadata();
         $metadata = reset($metadata);
-        if(isset($metadata['emailId']) && !empty($metadata['emailId'])){
-            $emailEntity = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
+        if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
+            $emailEntity   = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
             $entityReplyTo = $emailEntity->getReplyToAddress();
             if (!empty($entityReplyTo)) {
                 $entityReplyTo = explode(',', $entityReplyTo);
                 foreach ($entityReplyTo as $key => $value) {
                     $entityReplyTo[$key] = new Address($value);
                 }
+
                 return $entityReplyTo;
             }
         }
+
         return $email->getReplyTo();
     }
 
