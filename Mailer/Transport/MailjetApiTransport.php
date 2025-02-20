@@ -262,7 +262,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     {
         $entityEmailFrom = '';
         $entityNameFrom  = '';
-        
+
         if ($email instanceof MauticMessage) {
             $metadata = $email->getMetadata();
             $metadata = reset($metadata);
@@ -298,10 +298,12 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
                 $entityReplyTo = $emailEntity->getReplyToAddress();
                 if (!empty($entityReplyTo)) {
                     $entityReplyTo = explode(',', $entityReplyTo);
-                    return array_map(fn($email) => new Address($email), $entityReplyTo);
+
+                    return array_map(fn ($email) => new Address($email), $entityReplyTo);
                 }
             }
         }
+
         return $email->getReplyTo();
     }
 
