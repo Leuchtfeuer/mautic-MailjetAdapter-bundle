@@ -299,7 +299,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
                 if (!empty($entityReplyTo)) {
                     $entityReplyTo = explode(',', $entityReplyTo);
 
-                    return array_map(fn ($email) => new Address($email), $entityReplyTo);
+                    return array_map(fn ($email): \Symfony\Component\Mime\Address => new Address($email), $entityReplyTo);
                 }
             }
         }
