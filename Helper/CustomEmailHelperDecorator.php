@@ -34,7 +34,7 @@ class CustomEmailHelperDecorator extends MailHelper
         return parent::queue($dispatchSendEvent, $returnMode);
     }
 
-    public function getNewUniqueEmail($address,$fromAddress)
+    public function getNewUniqueEmail($address,$fromAddress): string
     {
         if(!isset($this->metadata[$fromAddress]['contacts'][$address])){
             return $address;
