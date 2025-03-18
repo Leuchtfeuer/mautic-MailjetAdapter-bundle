@@ -26,6 +26,7 @@ use Symfony\Contracts\HttpClient\Exception\ServerExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 use Symfony\Contracts\HttpClient\ResponseInterface;
+use Mautic\EmailBundle\Entity\Email as EmailEntity;
 
 final class MailjetApiTransport extends AbstractApiTransport implements TokenTransportInterface
 {
@@ -83,6 +84,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
      */
     protected function doSendApi(SentMessage $sentMessage, Email $email, Envelope $envelope): ResponseInterface
     {
+
         try {
             $payload = $this->preparePayload($email, $envelope);
 
@@ -144,6 +146,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     {
         $message  = [];
         foreach ($metadata as $leadEmail => $leadData) {
+            $leadEmail = $this->cleanEmail($leadEmail);
             $to = [
                 [
                     'Email' => $leadEmail,
@@ -197,6 +200,12 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             'Messages'    => $message,
             'SandBoxMode' => $this->sandbox,
         ];
+    }
+
+    private function cleanEmail(string $email)
+    {
+        return preg_replace('/\+\d+/', '', $email);
+
     }
 
     /**
