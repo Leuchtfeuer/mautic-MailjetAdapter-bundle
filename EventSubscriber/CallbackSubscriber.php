@@ -88,8 +88,9 @@ class CallbackSubscriber implements EventSubscriberInterface
             if (isset($event['CustomID']) && '' !== $event['CustomID'] && str_contains($event['CustomID'], '-')) {
                 $fistDashPos = strpos($event['CustomID'], '-', 0);
                 $leadIdHash  = substr($event['CustomID'], 0, $fistDashPos);
-                $leadEmail   = substr($event['CustomID'], $fistDashPos + 1, strlen($event['CustomID']));
-                if ($event['email'] == $leadEmail) {
+                $emailHash   = substr($event['CustomID'], $fistDashPos + 1);
+
+                if (md5($event['email']) === $emailHash) {
                     $this->transportCallback->addFailureByHashId($leadIdHash, $reason, $type);
                 }
             } else {

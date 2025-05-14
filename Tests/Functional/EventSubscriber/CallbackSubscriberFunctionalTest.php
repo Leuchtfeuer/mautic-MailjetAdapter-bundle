@@ -80,6 +80,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         ];
 
         $openDetails = $stat->getOpenDetails();
+        $this->assertArrayHasKey('bounces', $openDetails);
         $bounces     = $openDetails['bounces'][0];
         $this->assertSame($result['comments'], $bounces['reason']);
 
@@ -111,6 +112,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         ];
 
         $openDetails = $stat->getOpenDetails();
+        $this->assertArrayHasKey('bounces', $openDetails);
         $bounces     = $openDetails['bounces'][0];
         $this->assertSame($result['comments'], $bounces['reason']);
 
@@ -202,7 +204,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
             'mj_contact_id'    => 0,
             'customcampaign'   => '',
             'mj_message_id'    => 0,
-            'CustomID'         => !empty($hash) ? $hash.'-'.$email : $email,
+            'CustomID'         => !empty($hash) ? $hash.'-'.md5($email) : md5($email),
             'Payload'          => '',
             'error_related_to' => $type,
             'error'            => $type,

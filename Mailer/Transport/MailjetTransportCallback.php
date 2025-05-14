@@ -109,7 +109,7 @@ class MailjetTransportCallback extends TransportCallback
             $stat->setIsFailed(true);
         }
 
-        $openDetails = $stat->getOpenDetails();
+        $openDetails = $stat->getOpenDetails() ?: [];
         if (!isset($openDetails['bounces'])) {
             $openDetails['bounces'] = [];
         }
