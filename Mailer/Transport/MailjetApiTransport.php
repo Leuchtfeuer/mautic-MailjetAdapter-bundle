@@ -43,6 +43,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         'X-Mailjet-Debug', 'User-Agent', 'X-Mailer', 'X-MJ-WorkflowID',
     ];
 
+    private $manipulatePayload;
+
     public function __construct(
         private string $user,
         private string $password,
@@ -53,9 +55,10 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         LoggerInterface $logger = null,
         private CoreParametersHelper $coreParametersHelper,
         private EntityManager $em,
+        callable $manipulateMetadata = null,
     ) {
         parent::__construct($client, $dispatcher, $logger);
-
+        $this->manipulatePayload = $manipulateMetadata;
         $this->host = self::HOST;
     }
 
@@ -144,6 +147,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     {
         $message  = [];
         foreach ($metadata as $leadEmail => $leadData) {
+            $leadEmail = $this->cleanEmail($leadEmail);
             $to = [
                 [
                     'Email' => $leadEmail,
@@ -191,6 +195,10 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
                 $emailData['CustomID'] = $leadData['hashId'].'-'.md5($leadData['leadEmail']);
             }
             $message[] = $emailData;
+        }
+
+        if (null !== $this->manipulatePayload) {
+            $message = ($this->manipulatePayload)($message);
         }
 
         return [
@@ -415,5 +423,11 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         $email->html($htmlPart);
 
         return $retTokens;
+    }
+
+    private function cleanEmail(string $email)
+    {
+        return preg_replace('/\+\d+/', '', $email);
+
     }
 }
