@@ -1,0 +1,16 @@
+name: Initialise Code Review
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, review_requested]
+
+jobs:
+  check_permissions:
+    runs-on: ubuntu-latest
+    name: Check permissions
+    steps:
+      - name: Permission granted
+        if: ${{ github.event.pull_request.author_association == 'COLLABORATOR' || github.event.pull_request.author_association == 'MEMBER' }}
+        run: echo "Permissions sufficient. Running Code Review"
+      - name: Permission denied
+        if: ${{ github.event.pull_request.author_association != 'COLLABORATOR' && github.event.pull_request.author_association != 'MEMBER' }}
+        run: echo "Permissions insufficient" && exit 1

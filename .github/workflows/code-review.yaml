@@ -1,8 +1,9 @@
 name: Code Review
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize, review_requested]
+  workflow_run:
+    workflows: ["Initialise Code Review"]
+    types: [completed]
 
 jobs:
   ai-review:
