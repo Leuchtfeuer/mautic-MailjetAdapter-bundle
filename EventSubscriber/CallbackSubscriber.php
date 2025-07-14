@@ -58,15 +58,13 @@ class CallbackSubscriber implements EventSubscriberInterface
 
         foreach ($events as $event) {
             if (
-                ('bounce' === $event['event'] && $event['hard_bounce'] === true)
+                ('bounce' === $event['event'] && filter_var($event['hard_bounce'], FILTER_VALIDATE_BOOLEAN))
                 || 'blocked' === $event['event']
-            )
-            {
+            ) {
                 $type = DoNotContact::BOUNCED;
                 if ('blocked' === $event['event']) {
                     $eventType = 'BLOCKED';
-                }
-                else {
+                } else {
                     $eventType = 'HARD';
                 }
 

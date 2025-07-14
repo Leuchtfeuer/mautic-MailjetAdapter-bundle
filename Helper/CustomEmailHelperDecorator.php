@@ -18,16 +18,14 @@ class CustomEmailHelperDecorator extends MailHelper
      *                                  DO_NOTHING         leaves the current errors array and MauticMessage instance intact
      *                                  NOTHING_IF_FAILED  leaves the current errors array MauticMessage instance intact if it fails, otherwise reset_to
      *                                  RETURN_ERROR       return an array of [success, $errors]; only one applicable if message is queued
-     *
-     * @return bool|array
      */
     public function queue($dispatchSendEvent = false, $returnMode = self::QUEUE_RESET_TO): bool|array
     {
         $key = key($this->metadata);
-        if(!empty($key)) {
+        if (!empty($key)) {
             foreach ($this->queuedRecipients as $address => $name) {
-                if(isset($this->metadata[$key]['contacts'][$address])){
-                    $newAddress = $this->getNewUniqueEmail($address,$key);
+                if (isset($this->metadata[$key]['contacts'][$address])) {
+                    $newAddress = $this->getNewUniqueEmail($address, $key);
                     unset($this->queuedRecipients[$address]);
                     $this->queuedRecipients[$newAddress] = $name;
                 }
@@ -39,12 +37,11 @@ class CustomEmailHelperDecorator extends MailHelper
 
     public function send($dispatchSendEvent = false, $isQueueFlush = false): bool|array
     {
-
         $key = key($this->metadata);
-        if(!empty($key)) {
+        if (!empty($key)) {
             foreach ($this->queuedRecipients as $address => $name) {
-                if(isset($this->metadata[$key]['contacts'][$address])){
-                    $newAddress = $this->getNewUniqueEmail($address,$key);
+                if (isset($this->metadata[$key]['contacts'][$address])) {
+                    $newAddress = $this->getNewUniqueEmail($address, $key);
                     unset($this->queuedRecipients[$address]);
                     $this->queuedRecipients[$newAddress] = $name;
                 }
@@ -53,28 +50,28 @@ class CustomEmailHelperDecorator extends MailHelper
 
         return parent::send($dispatchSendEvent, $isQueueFlush);
     }
+
     /**
      * @param string $address
      * @param string $fromAddress
-     *
-     * @return string
      */
-    public function getNewUniqueEmail($address,$fromAddress): string
+    public function getNewUniqueEmail($address, $fromAddress): string
     {
-        if(!isset($this->metadata[$fromAddress]['contacts'][$address])){
+        if (!isset($this->metadata[$fromAddress]['contacts'][$address])) {
             return $address;
         }
 
-        $i=1;
+        $i    =1;
         $loop = true;
         while ($loop) {
-            if(!isset($this->metadata[$fromAddress]['contacts'][$address.'+'.$i])) {
+            if (!isset($this->metadata[$fromAddress]['contacts'][$address.'+'.$i])) {
                 $loop = false;
+
                 return $address.'+'.$i;
             }
-            $i++;
+            ++$i;
         }
+
         return $address;
     }
-
 }
