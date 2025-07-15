@@ -59,7 +59,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     ) {
         parent::__construct($client, $dispatcher, $logger);
         $this->manipulatePayload = $manipulateMetadata;
-        $this->host = self::HOST;
+        $this->host              = self::HOST;
     }
 
     public function getMaxBatchLimit(): int
@@ -148,7 +148,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         $message  = [];
         foreach ($metadata as $leadEmail => $leadData) {
             $leadEmail = $this->cleanEmail($leadEmail);
-            $to = [
+            $to        = [
                 [
                     'Email' => $leadEmail,
                     'Name'  => $leadData['name'] ?? '',
@@ -428,6 +428,5 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     private function cleanEmail(string $email)
     {
         return preg_replace('/\+\d+/', '', $email);
-
     }
 }

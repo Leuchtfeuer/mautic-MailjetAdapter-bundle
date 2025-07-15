@@ -57,21 +57,21 @@ class CallbackSubscriber implements EventSubscriberInterface
         }
 
         foreach ($events as $event) {
-            if ('bounce' === $event['event'] || 'blocked' === $event['event']) {
+            if (
+                ('bounce' === $event['event'] && filter_var($event['hard_bounce'], FILTER_VALIDATE_BOOLEAN))
+                || 'blocked' === $event['event']
+            ) {
                 $type = DoNotContact::BOUNCED;
                 if ('blocked' === $event['event']) {
                     $eventType = 'BLOCKED';
-                } elseif (true === $event['hard_bounce'] || '1' === $event['hard_bounce']) {
-                    $eventType = 'HARD';
                 } else {
-                    $eventType = 'SOFT';
+                    $eventType = 'HARD';
                 }
 
                 $error = [
                     $eventType,
                     !empty($event['error_related_to']) ? $event['error_related_to'] : '',
                     !empty($event['error']) ? $event['error'] : '',
-                    ('SOFT' === $eventType) ? (!empty($event['comment']) ? $event['comment'] : '') : '',
                 ];
 
                 $reason = implode(': ', array_filter($error));

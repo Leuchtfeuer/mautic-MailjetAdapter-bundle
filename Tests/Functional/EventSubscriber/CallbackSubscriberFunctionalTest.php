@@ -106,17 +106,8 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         $this->assertSame('Callback processed', $response->getContent());
         $this->assertSame(200, $response->getStatusCode());
 
-        $result = [
-            'comments' => 'SOFT: bounce: bounce',
-            'reason'   => DoNotContact::BOUNCED,
-        ];
-
         $openDetails = $stat->getOpenDetails();
-        $this->assertArrayHasKey('bounces', $openDetails);
-        $bounces     = $openDetails['bounces'][0];
-        $this->assertSame($result['comments'], $bounces['reason']);
-
-        $this->assertSoftBounceDoNotContact($contact, $result);
+        $this->assertEmpty($openDetails);
     }
 
     public function testCallbackProcessByHashId(): void
@@ -131,7 +122,11 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
 
             $contacts[$type] = $contact;
             $stats[$email]   = $this->createStat($contact, $email, $hash);
-            $payload[]       = $this->payloadStructure($type, $email, $hash);
+            $params          = $this->payloadStructure($type, $email, $hash);
+            if ('bounce' === $type) {
+                $params['hard_bounce'] = 'true';
+            }
+            $payload[]       = $params;
         }
 
         $this->em->flush();
@@ -151,11 +146,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
 
             $this->assertSame($result['comments'], $bounces['reason']);
 
-            if ('bounce' === $type) {
-                $this->assertSoftBounceDoNotContact($contact, $result);
-            } else {
-                $this->assertDoNotContact($contact, $result);
-            }
+            $this->assertDoNotContact($contact, $result);
         }
     }
 
@@ -167,7 +158,11 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
             $email           = $type.'@mautic.test';
             $contact         = $this->createContact($email);
             $contacts[$type] = $contact;
-            $payload[]       = $this->payloadStructure($type, $email);
+            $params          = $this->payloadStructure($type, $email);
+            if ('bounce' === $type) {
+                $params['hard_bounce'] = 'true';
+            }
+            $payload[]       = $params;
         }
 
         $this->em->flush();
@@ -181,11 +176,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         foreach (['bounce', 'blocked', 'spam', 'unsub'] as $type) {
             $result = $this->getCommentAndReason($type);
 
-            if ('bounce' === $type) {
-                $this->assertSoftBounceDoNotContact($contacts[$type], $result);
-            } else {
-                $this->assertDoNotContact($contacts[$type], $result);
-            }
+            $this->assertDoNotContact($contacts[$type], $result);
         }
     }
 
@@ -229,7 +220,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
                 'reason'   => DoNotContact::BOUNCED,
             ],
             'bounce' => [
-                'comments' => 'SOFT: '.$type.': '.$type,
+                'comments' => 'HARD: '.$type.': '.$type,
                 'reason'   => DoNotContact::BOUNCED,
             ],
             'spam' => [
@@ -278,19 +269,6 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
         $dnc = $contact->getDoNotContact()->current();
 
         $this->assertSame('email', $dnc->getChannel());
-        $this->assertSame($result['comments'], $dnc->getComments());
-        $this->assertSame($contact, $dnc->getLead());
-        $this->assertSame($result['reason'], $dnc->getReason());
-    }
-
-    /**
-     * @param array<string, string|int> $result
-     */
-    private function assertSoftBounceDoNotContact(Lead $contact, array $result): void
-    {
-        $dnc = $contact->getDoNotContact()->current();
-
-        $this->assertSame('mailjet', $dnc->getChannel());
         $this->assertSame($result['comments'], $dnc->getComments());
         $this->assertSame($contact, $dnc->getLead());
         $this->assertSame($result['reason'], $dnc->getReason());
