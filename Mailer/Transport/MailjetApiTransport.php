@@ -14,13 +14,11 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\Exception\HttpTransportException;
-use Symfony\Component\Mailer\Exception\RuntimeException;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mailer\Transport\AbstractApiTransport;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
-use Symfony\Component\Mime\MessageConverter;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
@@ -37,8 +35,6 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     public const HOST         = 'api.mailjet.com';
     private const API_VERSION = '3.1';
 
-    public const DEFAULT_PORT = 443;
-
     private const FORBIDDEN_HEADERS = [
         'Date', 'X-CSA-Complaints', 'Message-Id', 'X-MJ-StatisticsContactsListID',
         'DomainKey-Status', 'Received-SPF', 'Authentication-Results', 'Received',
@@ -47,20 +43,23 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         'X-Mailjet-Debug', 'User-Agent', 'X-Mailer', 'X-MJ-WorkflowID',
     ];
 
+    private $manipulatePayload;
+
     public function __construct(
-        private string                   $user,
-        private string                   $password,
-        private bool                     $sandbox,
+        private string $user,
+        private string $password,
+        private bool $sandbox,
         private MailjetTransportCallback $callback,
-        HttpClientInterface              $client = null,
-        EventDispatcherInterface         $dispatcher = null,
-        LoggerInterface                  $logger = null,
-        private CoreParametersHelper     $coreParametersHelper,
-        private EntityManager            $em,
-        protected                        $port,
+        HttpClientInterface $client = null,
+        EventDispatcherInterface $dispatcher = null,
+        LoggerInterface $logger = null,
+        private CoreParametersHelper $coreParametersHelper,
+        private EntityManager $em,
+        callable $manipulateMetadata = null,
     ) {
         parent::__construct($client, $dispatcher, $logger);
-        $this->host = self::HOST;
+        $this->manipulatePayload = $manipulateMetadata;
+        $this->host              = self::HOST;
     }
 
     public function getMaxBatchLimit(): int
@@ -68,20 +67,9 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         return 50;
     }
 
-    protected function doSendHttp(SentMessage $message): ResponseInterface
-    {
-        try {
-            $email = MessageConverter::toEmail($message->getOriginalMessage());
-        } catch (\Exception $e) {
-            throw new RuntimeException(sprintf('Unable to send message with the "%s" transport: ', __CLASS__).$e->getMessage(), 0, $e);
-        }
-
-        return $this->doSendApi($message, $email, $message->getEnvelope());
-    }
-
     public function __toString(): string
     {
-        return  sprintf(self::SCHEME.'://%s', $this->getEndpoint().($this->sandbox ? '?sandbox=true' : ''));
+        return sprintf(self::SCHEME.'://%s', $this->getEndpoint().($this->sandbox ? '?sandbox=true' : ''));
     }
 
     private function getEndpoint(): string
@@ -159,7 +147,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     {
         $message  = [];
         foreach ($metadata as $leadEmail => $leadData) {
-            $to = [
+            $leadEmail = $this->cleanEmail($leadEmail);
+            $to        = [
                 [
                     'Email' => $leadEmail,
                     'Name'  => $leadData['name'] ?? '',
@@ -203,9 +192,13 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             }
 
             if ($leadData['hashId']) {
-                $emailData['CustomID'] = $leadData['hashId'].'-'.$leadData['leadEmail'];
+                $emailData['CustomID'] = $leadData['hashId'].'-'.md5($leadData['leadEmail']);
             }
             $message[] = $emailData;
+        }
+
+        if (null !== $this->manipulatePayload) {
+            $message = ($this->manipulatePayload)($message);
         }
 
         return [
@@ -273,17 +266,19 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         ];
     }
 
-    private function getEmailFrom(Email $email, Envelope $envelope): ?Address
+    private function getEmailFrom(Email $email, Envelope $envelope): Address
     {
-
-        $metadata = $email->getMetadata();
-        $metadata = reset($metadata);
         $entityEmailFrom = '';
-        $entityNameFrom = '';
-        if(isset($metadata['emailId']) && !empty($metadata['emailId'])){
-            $emailEntity = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
-            $entityEmailFrom = $emailEntity->getFromAddress();
-            $entityNameFrom = $emailEntity->getFromName();
+        $entityNameFrom  = '';
+
+        if ($email instanceof MauticMessage) {
+            $metadata = $email->getMetadata();
+            $metadata = reset($metadata);
+            if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
+                $emailEntity     = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
+                $entityEmailFrom = $emailEntity->getFromAddress();
+                $entityNameFrom  = $emailEntity->getFromName();
+            }
         }
 
         $address = $envelope->getSender();
@@ -296,27 +291,27 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         }
 
         return new Address($entityEmailFrom, $entityNameFrom);
-
     }
 
     /**
-     * @return array<int, string>
+     * @return array<int, Address>
      */
     private function getReplyTo(Email $email): array
     {
-        $metadata = $email->getMetadata();
-        $metadata = reset($metadata);
-        if(isset($metadata['emailId']) && !empty($metadata['emailId'])){
-            $emailEntity = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
-            $entityReplyTo = $emailEntity->getReplyToAddress();
-            if (!empty($entityReplyTo)) {
-                $entityReplyTo = explode(',', $entityReplyTo);
-                foreach ($entityReplyTo as $key => $value) {
-                    $entityReplyTo[$key] = new Address($value);
+        if ($email instanceof MauticMessage) {
+            $metadata = $email->getMetadata();
+            $metadata = reset($metadata);
+            if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
+                $emailEntity   = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
+                $entityReplyTo = $emailEntity->getReplyToAddress();
+                if (!empty($entityReplyTo)) {
+                    $entityReplyTo = explode(',', $entityReplyTo);
+
+                    return array_map(fn ($email): \Symfony\Component\Mime\Address => new Address($email), $entityReplyTo);
                 }
-                return $entityReplyTo;
             }
         }
+
         return $email->getReplyTo();
     }
 
@@ -428,5 +423,10 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         $email->html($htmlPart);
 
         return $retTokens;
+    }
+
+    private function cleanEmail(string $email)
+    {
+        return preg_replace('/\+\d+/', '', $email);
     }
 }

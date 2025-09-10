@@ -2,9 +2,6 @@ Mailjet Adapter by Leuchtfeuer
 ==============================
 
 
-### Risk of failure for API sending, for details see https://github.com/Leuchtfeuer/mautic-MailjetAdapter-bundle/issues/13
-
-
 CONTENTS OF THIS FILE
 ---------------------
 

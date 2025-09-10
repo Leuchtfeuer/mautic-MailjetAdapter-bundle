@@ -71,10 +71,6 @@ class MailjetTransportCallback extends TransportCallback
      */
     private function getChannelForAddressOrContact(string $comments, ?int $channelId): array|string
     {
-        if (str_starts_with($comments, 'SOFT')) {
-            return 'mailjet';
-        }
-
         $mailArray = [
             'email' => $channelId,
         ];
@@ -90,10 +86,6 @@ class MailjetTransportCallback extends TransportCallback
      */
     private function getChannelForHashId($comments, $email): array|string
     {
-        if (str_starts_with($comments, 'SOFT')) {
-            return 'mailjet';
-        }
-
         if (null == $email) {
             return 'email';
         }
@@ -109,7 +101,7 @@ class MailjetTransportCallback extends TransportCallback
             $stat->setIsFailed(true);
         }
 
-        $openDetails = $stat->getOpenDetails();
+        $openDetails = $stat->getOpenDetails() ?: [];
         if (!isset($openDetails['bounces'])) {
             $openDetails['bounces'] = [];
         }
