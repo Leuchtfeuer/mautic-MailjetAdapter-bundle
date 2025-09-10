@@ -53,7 +53,7 @@ class MailjetTransportFactory extends AbstractTransportFactory
         }
 
         if (MailjetApiTransport::SCHEME === $dsn->getScheme() && $user && $password) {
-            return new MailjetApiTransport($user, $password, $sandbox, $this->transportCallback, $this->client, $this->dispatcher, $this->logger, $this->coreParametersHelper, $this->em,$dsn->getPort(MailjetApiTransport::DEFAULT_PORT),);
+            return new MailjetApiTransport($user, $password, $sandbox, $this->transportCallback, $this->client, $this->dispatcher, $this->logger, $this->coreParametersHelper, $this->em,null,  $dsn->getPort(MailjetApiTransport::DEFAULT_PORT));
         }
 
         throw new UnsupportedSchemeException($dsn, 'mailjet', $this->getSupportedSchemes());
