@@ -14,11 +14,13 @@ use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Mailer\Envelope;
 use Symfony\Component\Mailer\Exception\HttpTransportException;
+use Symfony\Component\Mailer\Exception\RuntimeException;
 use Symfony\Component\Mailer\Exception\TransportException;
 use Symfony\Component\Mailer\SentMessage;
 use Symfony\Component\Mailer\Transport\AbstractApiTransport;
 use Symfony\Component\Mime\Address;
 use Symfony\Component\Mime\Email;
+use Symfony\Component\Mime\MessageConverter;
 use Symfony\Contracts\HttpClient\Exception\ClientExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\DecodingExceptionInterface;
 use Symfony\Contracts\HttpClient\Exception\RedirectionExceptionInterface;
@@ -35,6 +37,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     public const HOST         = 'api.mailjet.com';
     private const API_VERSION = '3.1';
 
+    public const DEFAULT_PORT = 443;
+
     private const FORBIDDEN_HEADERS = [
         'Date', 'X-CSA-Complaints', 'Message-Id', 'X-MJ-StatisticsContactsListID',
         'DomainKey-Status', 'Received-SPF', 'Authentication-Results', 'Received',
@@ -44,18 +48,18 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     ];
 
     public function __construct(
-        private string $user,
-        private string $password,
-        private bool $sandbox,
+        private string                   $user,
+        private string                   $password,
+        private bool                     $sandbox,
         private MailjetTransportCallback $callback,
-        HttpClientInterface $client = null,
-        EventDispatcherInterface $dispatcher = null,
-        LoggerInterface $logger = null,
-        private CoreParametersHelper $coreParametersHelper,
-        private EntityManager $em,
+        HttpClientInterface              $client = null,
+        EventDispatcherInterface         $dispatcher = null,
+        LoggerInterface                  $logger = null,
+        private CoreParametersHelper     $coreParametersHelper,
+        private EntityManager            $em,
+        protected                        $port,
     ) {
         parent::__construct($client, $dispatcher, $logger);
-
         $this->host = self::HOST;
     }
 
@@ -64,9 +68,20 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         return 50;
     }
 
+    protected function doSendHttp(SentMessage $message): ResponseInterface
+    {
+        try {
+            $email = MessageConverter::toEmail($message->getOriginalMessage());
+        } catch (\Exception $e) {
+            throw new RuntimeException(sprintf('Unable to send message with the "%s" transport: ', __CLASS__).$e->getMessage(), 0, $e);
+        }
+
+        return $this->doSendApi($message, $email, $message->getEnvelope());
+    }
+
     public function __toString(): string
     {
-        return sprintf(self::SCHEME.'://%s', $this->getEndpoint().($this->sandbox ? '?sandbox=true' : ''));
+        return  sprintf(self::SCHEME.'://%s', $this->getEndpoint().($this->sandbox ? '?sandbox=true' : ''));
     }
 
     private function getEndpoint(): string
