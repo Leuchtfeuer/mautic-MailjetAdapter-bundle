@@ -1,36 +1,29 @@
-Mailjet Adapter by Leuchtfeuer
-==============================
+# DEPRECATED Plugin: Mailjet Adapter by Leuchtfeuer
 
 
-CONTENTS OF THIS FILE
----------------------
 
-* Introduction
-* Requirements
-* Installation
-* Configuration
-* Author
+## Overview / Purpose / Features
+This plugin enable Mautic 5 to run Mailjet as a email transport, including bulk sending via API, and catching bounces and other feedback via Webhook.
 
-INTRODUCTION
-------------
-
-This plugin enable Mautic 5 to run Mailjet as a email transport.
-
-REQUIREMENTS
-------------
+## Requirements for this release
 - Mautic 5.x (minimum 5.1)
 - PHP 8.0 or higher
 
-INSTALLATION
-------------
+## Installation
+### Composer
+This plugin can be installed through composer.
+### Manual Installation
+Alternatively, it can be installed manually, following the usual steps:
+- Download the plugin
+- Unzip to the Mautic `plugins` directory
+- Rename folder to `LeuchtfeuerMailjetAdapterBundle`
+- In the Mautic backend, go to the `Plugins` page as an administrator
+- Click on the `Install/Upgrade Plugins` button to install the Plugin.
+OR
+- If you have shell access, execute `php bin\console cache:clear` and `php bin\console mautic:plugins:reload` to install the plugins.
 
-1. Get the plugin using `composer require leuchtfeuer/mautic-mailjetadapter-bundle`
-2. Install it using `php bin\console mautic:plugins:reload`.
-3. The plugin will start listing on plugin page.
 
-
-CONFIGURATION
--------------
+## Configuration
 
 ### Mautic 
 
@@ -70,16 +63,32 @@ On the Configuration page **Email DSN** should look like ![Email DSN](Docs/imgs/
 3. Set up the webhook hook for event tracking from your account preferences, in the [Event Tracking section][EventTrackingSection]. The webhook URL should be `https://<your-domain.tld>/mailer/callback`.
 
  
+## Known Issues
+
+## Troubleshooting
+Make sure you have not only installed but also enabled the Plugin.
+If things are still funny, please try
+`php bin/console cache:clear`
 
 
-AUTHOR AND CONTACT
-------
+## Change log
+- https://github.com/Leuchtfeuer/mautic-MailjetAdapter-bundle/releases
+## Future Ideas
+- Plugin DEPRECTAED - No future improvements intended
+## Sponsoring & Commercial Support
+We are continuously improving our plugins. If you are requiring priority support or custom features, please contact us at mautic-plugins@leuchtfeuer.com.
+## Get Involved
+Feel free to open issues or submit pull requests on [GitHub](#). Follow the contribution guidelines in `CONTRIBUTING.md`.”
+## Credits
 
+## Author
 Leuchtfeuer Digital Marketing GmbH
-
 Please raise any issues in GitHub.
-
 For all other things, please email mautic-plugins@Leuchtfeuer.com
+## License
+“This plugin is licensed under the MIT License. See the `LICENSE` file for more details.”
+## Resources / Further Readings
+
 
 
 [MailjetGuidePage]: <https://dev.mailjet.com/email/guides/getting-started/>
