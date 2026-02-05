@@ -5,6 +5,6 @@ declare(strict_types=1);
 return [
     'name'        => 'Mailjet Adapter by Leuchtfeuer',
     'description' => 'Plugin allows sending emails with Mailjet in batches via API and callback handling used for bounce management.',
-    'version'     => '1.0.11',
+    'version'     => '5.0.0',
     'author'      => 'Leuchtfeuer Digital Marketing GmbH',
 ];
