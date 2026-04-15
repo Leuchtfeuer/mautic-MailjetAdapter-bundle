@@ -1,30 +1,14 @@
-name: ciUnitTests
+name: CI Workflow
+
 on:
   pull_request:
-    branches:
-      - 'main'
 
 jobs:
-  integration:
-    name: CI Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-      - name: Setup PHP Environment
-        uses: shivammathur/setup-php@v2
-        with:
-          php-version: 8.1
-      - name: Install composer requirements.
-        run: composer install
-      - name: Run PHPUnit
-        run: ./vendor/bin/phpunit --testsuite unit --coverage-cobertura=coverage.xml
-      - name: Code Coverage
-        uses: irongut/CodeCoverageSummary@v1.3.0
-        with:
-          filename: coverage.xml
-          badge: true
-          format: 'markdown'
-          output: 'both'
-      - name: Write to Job Summary
-        run: cat code-coverage-results.md >> $GITHUB_STEP_SUMMARY
+  ci-workflow:
+    name: CI
+    uses: Leuchtfeuer/mautic-ci-runner/.github/workflows/complete-ci.yaml@main
+    with:
+      mauticVersion: 5
+    secrets:
+      PERSONAL_ACCESS_TOKEN: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
