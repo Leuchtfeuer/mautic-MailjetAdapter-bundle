@@ -21,7 +21,7 @@ final class MailjetApiTransportTest extends MauticMysqlTestCase
 
     protected function setUp(): void
     {
-        $this->configParams['mailer_dsn']            = MailjetApiTransport::SCHEME.'://user:pass@default?sandbox=true';
+        $this->configParams['mailer_dsn']            = MailjetApiTransport::SCHEME.'://user:pass@localhost?sandbox=true';
         $this->configParams['messenger_dsn_email']   = 'sync://';
         $this->configParams['mailer_from_email']     = 'admin@mautic.test';
         $this->configParams['mailer_from_name']      = 'Admin';
@@ -36,7 +36,7 @@ final class MailjetApiTransportTest extends MauticMysqlTestCase
 
         $fields = [
             'config[emailconfig][mailer_dsn][scheme]'                  => MailjetApiTransport::SCHEME,
-            'config[emailconfig][mailer_dsn][host]'                    => 'default',
+            'config[emailconfig][mailer_dsn][host]'                    => 'localhost',
         ];
         $form = $crawler->selectButton('config[buttons][save]')->form();
 

@@ -254,9 +254,9 @@ final class MailjetApiTransportTest extends TestCase
     private function getMauticMessage(): MauticMessage
     {
         $mauticMessage = new MauticMessage();
-        $mauticMessage->to(new Address('from@mautic.com', 'From Name'));
-        $mauticMessage->replyTo(new Address('reply@mautic.com', 'Reply To Name'));
+        $mauticMessage->from(new Address('from@mautic.com', 'From Name'));
         $mauticMessage->to(new Address('to@mautic.com', 'To Name'));
+        $mauticMessage->replyTo(new Address('reply@mautic.com', 'Reply To Name'));
         $mauticMessage->cc(new Address('cc@mautic.com', 'CC Name'));
         $mauticMessage->bcc(new Address('bcc@mautic.com', 'BCC Name'));
         $mauticMessage->updateLeadIdHash('LeadHash');

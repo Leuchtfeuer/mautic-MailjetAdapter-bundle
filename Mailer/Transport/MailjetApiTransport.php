@@ -281,13 +281,29 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             }
         }
 
-        $address = $envelope->getSender();
+        if (empty($entityEmailFrom) || empty($entityNameFrom)) {
+            $fromAddresses = $email->getFrom();
+            if (!empty($fromAddresses)) {
+                $fromAddress = $fromAddresses[0];
+
+                // Only use header values if they are not empty
+                if (empty($entityEmailFrom) && !empty($fromAddress->getAddress())) {
+                    $entityEmailFrom = $fromAddress->getAddress();
+                }
+
+                if (empty($entityNameFrom) && !empty($fromAddress->getName())) {
+                    $entityNameFrom = $fromAddress->getName();
+                }
+            }
+        }
+
+        // Final fallback: use system default from Mautic config
         if (empty($entityEmailFrom)) {
-            $entityEmailFrom = $address->getAddress();
+            $entityEmailFrom = $this->coreParametersHelper->get('mailer_from_email');
         }
 
         if (empty($entityNameFrom)) {
-            $entityNameFrom = $address->getName();
+            $entityNameFrom = $this->coreParametersHelper->get('mailer_from_name');
         }
 
         return new Address($entityEmailFrom, $entityNameFrom);
