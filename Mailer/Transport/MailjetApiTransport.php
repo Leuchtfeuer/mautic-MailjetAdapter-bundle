@@ -276,8 +276,10 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $metadata = reset($metadata);
             if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
                 $emailEntity     = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
-                $entityEmailFrom = $emailEntity->getFromAddress();
-                $entityNameFrom  = $emailEntity->getFromName();
+                if (null !== $emailEntity) {
+                    $entityEmailFrom = $emailEntity->getFromAddress();
+                    $entityNameFrom  = $emailEntity->getFromName();
+                }
             }
         }
 
