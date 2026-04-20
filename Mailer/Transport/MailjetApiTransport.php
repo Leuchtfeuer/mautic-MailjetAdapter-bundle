@@ -43,6 +43,9 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         'X-Mailjet-Debug', 'User-Agent', 'X-Mailer', 'X-MJ-WorkflowID',
     ];
 
+    /**
+     * @var callable|null
+     */
     private $manipulatePayload;
 
     public function __construct(
@@ -159,7 +162,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $attachments   = $this->prepareAttachments($email);
             $newTokens     = $this->prepareTokenFromLeadMetadata($email, $leadData);
             $emailData     = [
-                'From'             => $this->formatAddress($this->getEmailFrom($email, $envelope)),
+                'From'             => $this->formatAddress($this->getEmailFrom($email)),
                 'To'               => $to,
                 'Subject'          => $email->getSubject(),
                 'Attachments'      => $attachments,
@@ -266,7 +269,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         ];
     }
 
-    private function getEmailFrom(Email $email, Envelope $envelope): Address
+    private function getEmailFrom(Email $email): Address
     {
         $entityEmailFrom = '';
         $entityNameFrom  = '';
@@ -276,18 +279,36 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $metadata = reset($metadata);
             if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
                 $emailEntity     = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
-                $entityEmailFrom = $emailEntity->getFromAddress();
-                $entityNameFrom  = $emailEntity->getFromName();
+                if (null !== $emailEntity) {
+                    $entityEmailFrom = $emailEntity->getFromAddress();
+                    $entityNameFrom  = $emailEntity->getFromName();
+                }
             }
         }
 
-        $address = $envelope->getSender();
+        if (empty($entityEmailFrom) || empty($entityNameFrom)) {
+            $fromAddresses = $email->getFrom();
+            if (!empty($fromAddresses)) {
+                $fromAddress = $fromAddresses[0];
+
+                // Only use header values if they are not empty
+                if (empty($entityEmailFrom) && !empty($fromAddress->getAddress())) {
+                    $entityEmailFrom = $fromAddress->getAddress();
+                }
+
+                if (empty($entityNameFrom) && !empty($fromAddress->getName())) {
+                    $entityNameFrom = $fromAddress->getName();
+                }
+            }
+        }
+
+        // Final fallback: use system default from Mautic config
         if (empty($entityEmailFrom)) {
-            $entityEmailFrom = $address->getAddress();
+            $entityEmailFrom = $this->coreParametersHelper->get('mailer_from_email');
         }
 
         if (empty($entityNameFrom)) {
-            $entityNameFrom = $address->getName();
+            $entityNameFrom = $this->coreParametersHelper->get('mailer_from_name');
         }
 
         return new Address($entityEmailFrom, $entityNameFrom);
@@ -425,8 +446,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         return $retTokens;
     }
 
-    private function cleanEmail(string $email)
+    private function cleanEmail(string $email): string
     {
-        return preg_replace('/\+\d+/', '', $email);
+        return preg_replace('/\+\d+/', '', $email) ?? $email;
     }
 }
