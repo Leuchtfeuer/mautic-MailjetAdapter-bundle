@@ -36,7 +36,7 @@ class MailjetTransportCallback extends TransportCallback
 
             $email   = $stat->getEmail();
             foreach ($contacts as $contact) {
-                $channel = $this->getChannelForHashId($comments, $email);
+                $channel = $this->getChannelForHashId($email);
                 $this->dncModel->addDncForContact($contact->getId(), $channel, $dncReason, $comments);
             }
         }
@@ -48,7 +48,7 @@ class MailjetTransportCallback extends TransportCallback
 
         if ($contacts = $result->getContacts()) {
             foreach ($contacts as $contact) {
-                $channel = $this->getChannelForAddressOrContact($comments, $channelId);
+                $channel = $this->getChannelForAddressOrContact($channelId);
                 $this->dncModel->addDncForContact($contact->getId(), $channel, $dncReason, $comments);
             }
         }
@@ -62,14 +62,14 @@ class MailjetTransportCallback extends TransportCallback
      */
     public function addFailureByContactId($id, $comments, $dncReason = DNC::BOUNCED, $channelId = null): void
     {
-        $channel = $this->getChannelForAddressOrContact($comments, $channelId);
+        $channel = $this->getChannelForAddressOrContact($channelId);
         $this->dncModel->addDncForContact($id, $channel, $dncReason, $comments);
     }
 
     /**
      * @return array<string, int>|string
      */
-    private function getChannelForAddressOrContact(string $comments, ?int $channelId): array|string
+    private function getChannelForAddressOrContact(?int $channelId): array|string
     {
         $mailArray = [
             'email' => $channelId,
@@ -79,12 +79,10 @@ class MailjetTransportCallback extends TransportCallback
     }
 
     /**
-     * @param string $comments
      * @param Email  $email
-     *
      * @return array<string, int>|string
      */
-    private function getChannelForHashId($comments, $email): array|string
+    private function getChannelForHashId($email): array|string
     {
         if (null == $email) {
             return 'email';

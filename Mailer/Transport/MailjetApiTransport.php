@@ -162,7 +162,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $attachments   = $this->prepareAttachments($email);
             $newTokens     = $this->prepareTokenFromLeadMetadata($email, $leadData);
             $emailData     = [
-                'From'             => $this->formatAddress($this->getEmailFrom($email, $envelope)),
+                'From'             => $this->formatAddress($this->getEmailFrom($email)),
                 'To'               => $to,
                 'Subject'          => $email->getSubject(),
                 'Attachments'      => $attachments,
@@ -269,7 +269,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         ];
     }
 
-    private function getEmailFrom(Email $email, Envelope $envelope): Address
+    private function getEmailFrom(Email $email): Address
     {
         $entityEmailFrom = '';
         $entityNameFrom  = '';
