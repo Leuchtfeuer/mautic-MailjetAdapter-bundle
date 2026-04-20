@@ -43,7 +43,10 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         'X-Mailjet-Debug', 'User-Agent', 'X-Mailer', 'X-MJ-WorkflowID',
     ];
 
-    private $manipulatePayload;
+    /**
+     * @var callable|null
+     */
+    private $manipulatePayload = null;
 
     public function __construct(
         private string $user,
@@ -443,8 +446,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         return $retTokens;
     }
 
-    private function cleanEmail(string $email)
+    private function cleanEmail(string $email): string
     {
-        return preg_replace('/\+\d+/', '', $email);
+        return preg_replace('/\+\d+/', '', $email) ?? $email;
     }
 }

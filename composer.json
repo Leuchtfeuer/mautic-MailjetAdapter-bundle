@@ -6,7 +6,9 @@
     "authors": [
         {
             "name": "Leuchtfeuer Digital Marketing GmbH",
-            "email": "mautic-plugins@Leuchtfeuer.com"
+            "email": "mautic-plugins@Leuchtfeuer.com",
+            "homepage": "https://Leuchtfeuer.com/mautic/",
+            "role": "Developer"
         },
         {
             "name": "Rahul Shinde",

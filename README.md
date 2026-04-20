@@ -62,7 +62,8 @@ On the Configuration page **Email DSN** should look like ![Email DSN](Docs/imgs/
 2. Then [retrieve your API and Secret keys][RetrieveKeys]. They will be used for authentication purposes.
 3. Set up the webhook hook for event tracking from your account preferences, in the [Event Tracking section][EventTrackingSection]. The webhook URL should be `https://<your-domain.tld>/mailer/callback`.
 
- 
+## Usage
+
 ## Known Issues
 
 ## Troubleshooting
