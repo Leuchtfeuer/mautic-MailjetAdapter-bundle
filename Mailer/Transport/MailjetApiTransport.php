@@ -46,7 +46,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     /**
      * @var callable|null
      */
-    private $manipulatePayload = null;
+    private $manipulatePayload;
 
     public function __construct(
         private string $user,
