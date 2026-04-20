@@ -79,7 +79,8 @@ class MailjetTransportCallback extends TransportCallback
     }
 
     /**
-     * @param Email  $email
+     * @param Email $email
+     *
      * @return array<string, int>|string
      */
     private function getChannelForHashId($email): array|string
