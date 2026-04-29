@@ -86,7 +86,7 @@ Leuchtfeuer Digital Marketing GmbH
 Please raise any issues in GitHub.
 For all other things, please email mautic-plugins@Leuchtfeuer.com
 ## License
-“This plugin is licensed under the MIT License. See the `LICENSE` file for more details.”
+This plugin is licensed under the GPL v3 License.
 ## Resources / Further Readings
 
 
