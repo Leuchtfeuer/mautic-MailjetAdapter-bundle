@@ -62,7 +62,9 @@ On the Configuration page **Email DSN** should look like ![Email DSN](Docs/imgs/
 2. Then [retrieve your API and Secret keys][RetrieveKeys]. They will be used for authentication purposes.
 3. Set up the webhook hook for event tracking from your account preferences, in the [Event Tracking section][EventTrackingSection]. The webhook URL should be `https://<your-domain.tld>/mailer/callback`.
 
- 
+## Usage
+This Plugin connects Mailjet with Mautic. After the Setup you can send emails in Mautic via Mailjet. It also brings some new features for example Bouncehandling. 
+
 ## Known Issues
 
 ## Troubleshooting
