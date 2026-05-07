@@ -68,8 +68,7 @@ On the Configuration page **Email DSN** should look like ![Email DSN](Docs/imgs/
 
 The plugin provides two transport modes:
 
-**SMTP Relay** (`mautic+mailjet+smtp`) sends emails via the Mailjet SMTP server
-on port 465 using TLS. This mode is particularly suitable if a local mail server
+**SMTP Relay** (`mautic+mailjet+smtp`) sends emails via the Mailjet SMTP server. This mode is particularly suitable if a local mail server
 is already available to act as a relay.
 
 **Email API** (`mautic+mailjet+api`) sends emails directly via the Mailjet REST
@@ -88,6 +87,7 @@ callback endpoint. The following events are handled in Mautic:
 
 > **Note:** The webhook URL must be configured in the Mailjet account settings
 > under Event Tracking and must be publicly accessible via HTTPS.
+
 ## Known Issues
 
 ## Troubleshooting
