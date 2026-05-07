@@ -85,9 +85,6 @@ callback endpoint. The following events are handled in Mautic:
 - **Spam Complaints**: Contact is marked as unsubscribed.
 - **Unsubscribes**: Contact is marked as unsubscribed.
 
-> **Note:** The webhook URL must be configured in the Mailjet account settings
-> under Event Tracking and must be publicly accessible via HTTPS.
-
 ## Known Issues
 
 ## Troubleshooting
