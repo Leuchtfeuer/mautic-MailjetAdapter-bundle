@@ -63,8 +63,31 @@ On the Configuration page **Email DSN** should look like ![Email DSN](Docs/imgs/
 3. Set up the webhook hook for event tracking from your account preferences, in the [Event Tracking section][EventTrackingSection]. The webhook URL should be `https://<your-domain.tld>/mailer/callback`.
 
 ## Usage
-This Plugin connects Mailjet with Mautic. After the Setup you can send emails in Mautic via Mailjet. It also brings some new features for example Bouncehandling. 
 
+### Transport Modes
+
+The plugin provides two transport modes:
+
+**SMTP Relay** (`mautic+mailjet+smtp`) sends emails via the Mailjet SMTP server
+on port 465 using TLS. This mode is particularly suitable if a local mail server
+is already available to act as a relay.
+
+**Email API** (`mautic+mailjet+api`) sends emails directly via the Mailjet REST
+API and supports bulk sending with up to 50 recipients per request.
+This mode is recommended for larger sending volumes.
+
+### Webhook & Bounce Handling
+
+The plugin automatically processes feedback from Mailjet via a dedicated
+callback endpoint. The following events are handled in Mautic:
+
+- **Hard Bounces & Blocked**: Contact is marked as bounced and excluded from
+  further sending.
+- **Spam Complaints**: Contact is marked as unsubscribed.
+- **Unsubscribes**: Contact is marked as unsubscribed.
+
+> **Note:** The webhook URL must be configured in the Mailjet account settings
+> under Event Tracking and must be publicly accessible via HTTPS.
 ## Known Issues
 
 ## Troubleshooting
