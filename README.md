@@ -64,17 +64,6 @@ On the Configuration page **Email DSN** should look like ![Email DSN](Docs/imgs/
 
 ## Usage
 
-### Transport Modes
-
-The plugin provides two transport modes:
-
-**SMTP Relay** (`mautic+mailjet+smtp`) sends emails via the Mailjet SMTP server. This mode is particularly suitable if a local mail server
-is already available to act as a relay.
-
-**Email API** (`mautic+mailjet+api`) sends emails directly via the Mailjet REST
-API and supports bulk sending with up to 50 recipients per request.
-This mode is recommended for larger sending volumes.
-
 ### Webhook & Bounce Handling
 
 The plugin automatically processes feedback from Mailjet via a dedicated
