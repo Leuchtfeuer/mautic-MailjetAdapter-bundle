@@ -62,7 +62,18 @@ On the Configuration page **Email DSN** should look like ![Email DSN](Docs/imgs/
 2. Then [retrieve your API and Secret keys][RetrieveKeys]. They will be used for authentication purposes.
 3. Set up the webhook hook for event tracking from your account preferences, in the [Event Tracking section][EventTrackingSection]. The webhook URL should be `https://<your-domain.tld>/mailer/callback`.
 
- 
+## Usage
+
+### Webhook & Bounce Handling
+
+The plugin automatically processes feedback from Mailjet via a dedicated
+callback endpoint. The following events are handled in Mautic:
+
+- **Hard Bounces & Blocked**: Contact is marked as bounced and excluded from
+  further sending.
+- **Spam Complaints**: Contact is marked as unsubscribed.
+- **Unsubscribes**: Contact is marked as unsubscribed.
+
 ## Known Issues
 
 ## Troubleshooting
@@ -86,7 +97,7 @@ Leuchtfeuer Digital Marketing GmbH
 Please raise any issues in GitHub.
 For all other things, please email mautic-plugins@Leuchtfeuer.com
 ## License
-“This plugin is licensed under the MIT License. See the `LICENSE` file for more details.”
+This plugin is licensed under the GPL v3 License.
 ## Resources / Further Readings
 
 
