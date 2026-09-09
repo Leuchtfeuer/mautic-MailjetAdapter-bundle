@@ -7,10 +7,10 @@ namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\EventSubscriber;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\EmailEvents;
 use Mautic\EmailBundle\Event\TransportWebhookEvent;
+use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\LeadBundle\Entity\DoNotContact;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
-use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Mailer\Transport\Dsn;
@@ -18,7 +18,7 @@ use Symfony\Component\Mailer\Transport\Dsn;
 class CallbackSubscriber implements EventSubscriberInterface
 {
     public function __construct(
-        private MailjetTransportCallback $transportCallback,
+        private TransportCallback $transportCallback,
         private CoreParametersHelper $coreParametersHelper
     ) {
     }

@@ -7,6 +7,7 @@ namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport;
 use Doctrine\ORM\EntityManager;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
+use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportTrait;
 use Mautic\LeadBundle\Entity\DoNotContact;
@@ -49,7 +50,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         private string $user,
         private string $password,
         private bool $sandbox,
-        private MailjetTransportCallback $callback,
+        private TransportCallback $callback,
         HttpClientInterface $client = null,
         EventDispatcherInterface $dispatcher = null,
         LoggerInterface $logger = null,

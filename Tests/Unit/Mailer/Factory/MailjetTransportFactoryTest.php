@@ -6,10 +6,13 @@ namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Unit\Mailer\Factory
 
 use Doctrine\ORM\EntityManager;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
+use Mautic\EmailBundle\Model\EmailStatModel;
+use Mautic\EmailBundle\Model\TransportCallback;
+use Mautic\EmailBundle\MonitoredEmail\Search\ContactFinder;
+use Mautic\LeadBundle\Model\DoNotContact;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Factory\MailjetTransportFactory;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
-use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -25,7 +28,11 @@ final class MailjetTransportFactoryTest extends TestCase
 
     protected function setUp(): void
     {
-        $transportCallbackMock = $this->createMock(MailjetTransportCallback::class);
+        $transportCallback = new TransportCallback(
+            $this->createMock(DoNotContact::class),
+            $this->createMock(ContactFinder::class),
+            $this->createMock(EmailStatModel::class)
+        );
         $eventDispatcherMock   = $this->createMock(EventDispatcherInterface::class);
         $httpClientMock        = $this->createMock(HttpClientInterface::class);
         $loggerMock            = $this->createMock(LoggerInterface::class);
@@ -33,7 +40,7 @@ final class MailjetTransportFactoryTest extends TestCase
         $entityManager         = $this->createMock(EntityManager::class);
 
         $this->mailjetTransportFactory = new MailjetTransportFactory(
-            $transportCallbackMock,
+            $transportCallback,
             $eventDispatcherMock,
             $httpClientMock,
             $loggerMock,
@@ -68,7 +75,7 @@ final class MailjetTransportFactoryTest extends TestCase
     /**
      * @return iterable<string, array<int, array<string, int|string|null>>>
      */
-    public function dataTransportDetailsWithExceptions(): iterable
+    public static function dataTransportDetailsWithExceptions(): iterable
     {
         yield 'SMTP when User and Password are null' => [
             // Dsn Details

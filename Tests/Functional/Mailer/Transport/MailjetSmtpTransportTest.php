@@ -47,7 +47,7 @@ final class MailjetSmtpTransportTest extends MauticMysqlTestCase
     /**
      * @return array<string, string[]>
      */
-    public function dataForEmailDnsConfiguration(): iterable
+    public static function dataForEmailDnsConfiguration(): iterable
     {
         yield 'Empty schema' => [
             'scheme',

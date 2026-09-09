@@ -7,8 +7,11 @@ namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Unit\Mailer\Transpo
 use Doctrine\ORM\EntityManager;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
+use Mautic\EmailBundle\Model\EmailStatModel;
+use Mautic\EmailBundle\Model\TransportCallback;
+use Mautic\EmailBundle\MonitoredEmail\Search\ContactFinder;
+use Mautic\LeadBundle\Model\DoNotContact;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
-use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
 use PHPUnit\Framework\Assert;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -37,7 +40,11 @@ final class MailjetApiTransportTest extends TestCase
         $this->responseMock          = $this->createMock(ResponseInterface::class);
         $this->envelopeMock          = $this->createMock(Envelope::class);
 
-        $transportCallbackMock = $this->createMock(MailjetTransportCallback::class);
+        $transportCallback = new TransportCallback(
+            $this->createMock(DoNotContact::class),
+            $this->createMock(ContactFinder::class),
+            $this->createMock(EmailStatModel::class)
+        );
         $eventDispatcherMock   = $this->createMock(EventDispatcherInterface::class);
         $loggerMock            = $this->createMock(LoggerInterface::class);
         $coreParameterHelper   = $this->createMock(CoreParametersHelper::class);
@@ -47,7 +54,7 @@ final class MailjetApiTransportTest extends TestCase
             'user',
             'pass',
             true,
-            $transportCallbackMock,
+            $transportCallback,
             $this->httpClientMock,
             $eventDispatcherMock,
             $loggerMock,
@@ -214,7 +221,7 @@ final class MailjetApiTransportTest extends TestCase
     /**
      * @return array<string, array<int, array<string, mixed>>>
      */
-    public function dataForSendEmailWhenErrorInData(): iterable
+    public static function dataForSendEmailWhenErrorInData(): iterable
     {
         yield 'When email is without text and html' => [
             [
