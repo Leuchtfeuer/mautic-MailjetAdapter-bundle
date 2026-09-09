@@ -1,4 +1,4 @@
-# DEPRECATED Plugin: Mailjet Adapter by Leuchtfeuer
+# Plugin: Mailjet Adapter by Leuchtfeuer
 
 
 
