@@ -18,6 +18,8 @@ class CustomEmailHelperDecorator extends MailHelper
      *                                  DO_NOTHING         leaves the current errors array and MauticMessage instance intact
      *                                  NOTHING_IF_FAILED  leaves the current errors array MauticMessage instance intact if it fails, otherwise reset_to
      *                                  RETURN_ERROR       return an array of [success, $errors]; only one applicable if message is queued
+     *
+     * @return bool|array<int, mixed>
      */
     public function queue($dispatchSendEvent = false, $returnMode = self::QUEUE_RESET_TO): bool|array
     {
@@ -35,6 +37,9 @@ class CustomEmailHelperDecorator extends MailHelper
         return parent::queue($dispatchSendEvent, $returnMode);
     }
 
+    /**
+     * @return bool|array<int, mixed>
+     */
     public function send($dispatchSendEvent = false, $isQueueFlush = false): bool|array
     {
         $key = key($this->metadata);

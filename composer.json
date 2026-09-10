@@ -21,9 +21,6 @@
         "php": "^8.2",
         "mautic/core-lib": "^7.0"
     },
-    "require-dev": {
-        "phpunit/phpunit": "^9.5"
-    },
     "keywords": [
         "mautic",
         "plugin",
