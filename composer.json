@@ -37,6 +37,11 @@
             "MauticPlugin\\LeuchtfeuerMailjetAdapterBundle\\": ""
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "MauticPlugin\\LeuchtfeuerMailjetAdapterBundle\\Tests\\": "Tests"
+        }
+    },
     "scripts": {
         "test": [
             "@phpunit",

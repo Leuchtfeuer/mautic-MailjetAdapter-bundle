@@ -61,17 +61,12 @@ class CustomEmailHelperDecorator extends MailHelper
             return $address;
         }
 
-        $i    =1;
-        $loop = true;
-        while ($loop) {
+        $i = 1;
+        while (true) {
             if (!isset($this->metadata[$fromAddress]['contacts'][$address.'+'.$i])) {
-                $loop = false;
-
                 return $address.'+'.$i;
             }
             ++$i;
         }
-
-        return $address;
     }
 }

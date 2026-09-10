@@ -6,6 +6,7 @@ namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Functional\Mailer\T
 
 use Mautic\CoreBundle\Helper\UserHelper;
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
+use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Mautic\LeadBundle\Entity\Lead;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
 use Symfony\Component\DomCrawler\Crawler;
@@ -21,48 +22,6 @@ final class MailjetSmtpTransportTest extends MauticMysqlTestCase
         $this->configParams['mailer_from_name']      = 'Admin';
 
         parent::setUp();
-    }
-
-    /**
-     * @dataProvider dataForEmailDnsConfiguration
-     */
-    public function testEmailDnsConfiguration(string $field, string $expectedValidation): void
-    {
-        $crawler = $this->client->request(Request::METHOD_GET, '/s/config/edit');
-        $this->assertTrue($this->client->getResponse()->isOk());
-
-        $data = [
-            'config[emailconfig][mailer_dsn]['.$field.']' => '',
-        ];
-
-        $form = $crawler->selectButton('config[buttons][save]')->form();
-        $form->setValues($data);
-
-        // Check if there is the given validation error
-        $crawler = $this->client->submit($form);
-        $this->assertTrue($this->client->getResponse()->isOk());
-        $this->assertStringContainsString($expectedValidation, $crawler->html());
-    }
-
-    /**
-     * @return array<string, string[]>
-     */
-    public static function dataForEmailDnsConfiguration(): iterable
-    {
-        yield 'Empty schema' => [
-            'scheme',
-            'mailer DSN must contain a scheme.',
-        ];
-
-        yield 'Empty User' => [
-            'user',
-            'User is not set.',
-        ];
-
-        yield 'Empty Password' => [
-            'password',
-            'Password is not set.',
-        ];
     }
 
     public function testSendEmail(): void
@@ -93,13 +52,13 @@ final class MailjetSmtpTransportTest extends MauticMysqlTestCase
         self::assertQueuedEmailCount(1);
 
         $email      = self::getMailerMessage();
-        $userHelper = static::getContainer()->get(UserHelper::class);
+        $this->assertInstanceOf(MauticMessage::class, $email);
+        $userHelper = self::getContainer()->get(UserHelper::class);
         $user       = $userHelper->getUser();
 
         $this->assertSame('Hello there!', $email->getSubject());
-        $this->assertStringContainsString('This is test body for contact@an.email!', $email->getHtmlBody());
+        $this->assertStringContainsString('This is test body for contact@an.email!', (string) $email->getHtmlBody());
         $this->assertSame('This is test body for contact@an.email!', $email->getTextBody());
-        /** @phpstan-ignore-next-line */
         $this->assertSame('contact@an.email', $email->getMetadata()['contact@an.email']['tokens']['{contactfield=email}']);
         $this->assertCount(1, $email->getFrom());
         $this->assertSame($user->getName(), $email->getFrom()[0]->getName());

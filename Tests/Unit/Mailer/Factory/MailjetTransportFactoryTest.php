@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Unit\Mailer\Factory;
 
-use Doctrine\ORM\EntityManager;
-use Mautic\CoreBundle\Helper\CoreParametersHelper;
+use Mautic\EmailBundle\Entity\EmailRepository;
 use Mautic\EmailBundle\Model\EmailStatModel;
 use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\EmailBundle\MonitoredEmail\Search\ContactFinder;
@@ -13,7 +12,7 @@ use Mautic\LeadBundle\Model\DoNotContact;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Factory\MailjetTransportFactory;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
-use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
@@ -29,32 +28,25 @@ final class MailjetTransportFactoryTest extends TestCase
     protected function setUp(): void
     {
         $transportCallback = new TransportCallback(
-            $this->createMock(DoNotContact::class),
-            $this->createMock(ContactFinder::class),
-            $this->createMock(EmailStatModel::class)
+            $this->createStub(DoNotContact::class),
+            $this->createStub(ContactFinder::class),
+            $this->createStub(EmailStatModel::class)
         );
-        $eventDispatcherMock   = $this->createMock(EventDispatcherInterface::class);
-        $httpClientMock        = $this->createMock(HttpClientInterface::class);
-        $loggerMock            = $this->createMock(LoggerInterface::class);
-        $coreParameterHelper   = $this->createMock(CoreParametersHelper::class);
-        $entityManager         = $this->createMock(EntityManager::class);
 
         $this->mailjetTransportFactory = new MailjetTransportFactory(
             $transportCallback,
-            $eventDispatcherMock,
-            $httpClientMock,
-            $loggerMock,
-            $coreParameterHelper,
-            $entityManager
+            $this->createStub(EventDispatcherInterface::class),
+            $this->createStub(EmailRepository::class),
+            $this->createStub(HttpClientInterface::class),
+            $this->createStub(LoggerInterface::class),
         );
     }
 
     /**
      * @param array<string, int|string|null> $data
      * @param array<string, int|string>      $expected
-     *
-     * @dataProvider dataTransportDetailsWithExceptions
      */
+    #[DataProvider('dataTransportDetailsWithExceptions')]
     public function testCreateTransportWhenExceptionsOccurs(array $data, array $expected): void
     {
         $this->expectException($expected['exception']);
@@ -69,7 +61,7 @@ final class MailjetTransportFactoryTest extends TestCase
         );
 
         $mailjetTransport = $this->mailjetTransportFactory->create($dsn);
-        Assert::assertInstanceOf($expected['instance_of'], $mailjetTransport);
+        $this->assertInstanceOf($expected['instance_of'], $mailjetTransport);
     }
 
     /**

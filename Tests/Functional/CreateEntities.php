@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Functional;
 
 use Mautic\AssetBundle\Entity\Asset;
+use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\Entity\Email;
 use Mautic\LeadBundle\Entity\Lead;
 use Mautic\LeadBundle\Entity\LeadList;
@@ -47,7 +48,7 @@ trait CreateEntities
 
     private function getAsset(): Asset
     {
-        $uploadDir = self::getContainer()->get('mautic.helper.core_parameters')->get('upload_dir') ?? sys_get_temp_dir();
+        $uploadDir = self::getContainer()->get(CoreParametersHelper::class)->get('upload_dir') ?? sys_get_temp_dir();
         $tmpFile   = tempnam($uploadDir, 'mautic_asset_email_test_').'.txt';
         $file      = fopen($tmpFile, 'w');
 

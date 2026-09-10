@@ -18,8 +18,8 @@ use Symfony\Component\Mailer\Transport\Dsn;
 class CallbackSubscriber implements EventSubscriberInterface
 {
     public function __construct(
-        private TransportCallback $transportCallback,
-        private CoreParametersHelper $coreParametersHelper
+        private readonly TransportCallback $transportCallback,
+        private readonly CoreParametersHelper $coreParametersHelper,
     ) {
     }
 
@@ -42,7 +42,7 @@ class CallbackSubscriber implements EventSubscriberInterface
         }
 
         $postData = $webhookEvent->getRequest()->request->all();
-        if (empty($postData)) {
+        if ([] === $postData) {
             $webhookEvent->setResponse(new Response('There is no data to process.', Response::HTTP_NOT_FOUND));
 
             return;

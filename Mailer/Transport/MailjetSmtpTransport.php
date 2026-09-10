@@ -22,8 +22,8 @@ class MailjetSmtpTransport extends EsmtpTransport
         string $user,
         string $password,
         int $port,
-        EventDispatcherInterface $dispatcher = null,
-        LoggerInterface $logger = null
+        EventDispatcherInterface $dispatcher,
+        LoggerInterface $logger,
     ) {
         parent::__construct(self::HOST, $port, true, $dispatcher, $logger);
 
@@ -31,7 +31,7 @@ class MailjetSmtpTransport extends EsmtpTransport
         $this->setPassword($password);
     }
 
-    public function send(RawMessage $message, Envelope $envelope = null): ?SentMessage
+    public function send(RawMessage $message, ?Envelope $envelope = null): ?SentMessage
     {
         // add leadIdHash to track this email
         if ($message instanceof MauticMessage && $message->getLeadIdHash()) {
