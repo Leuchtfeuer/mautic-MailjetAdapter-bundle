@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Unit\Mailer\Transport;
 
-use Doctrine\ORM\EntityManager;
-use Mautic\CoreBundle\Helper\CoreParametersHelper;
+use Mautic\EmailBundle\Entity\EmailRepository;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
+use Mautic\EmailBundle\Model\EmailStatModel;
+use Mautic\EmailBundle\Model\TransportCallback;
+use Mautic\EmailBundle\MonitoredEmail\Search\ContactFinder;
+use Mautic\LeadBundle\Model\DoNotContact;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
-use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
-use PHPUnit\Framework\Assert;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\EventDispatcher\EventDispatcherInterface;
@@ -24,11 +26,23 @@ use Symfony\Contracts\HttpClient\ResponseInterface;
 
 final class MailjetApiTransportTest extends TestCase
 {
-    private HttpClientInterface|MockObject $httpClientMock;
+    /**
+     * @var MockObject&HttpClientInterface
+     */
+    private MockObject $httpClientMock;
     private MailjetApiTransport $transport;
-    private SentMessage|MockObject $sentMessageMock;
-    private ResponseInterface|MockObject $responseMock;
-    private Envelope|MockObject $envelopeMock;
+    /**
+     * @var MockObject&SentMessage
+     */
+    private MockObject $sentMessageMock;
+    /**
+     * @var MockObject&ResponseInterface
+     */
+    private MockObject $responseMock;
+    /**
+     * @var MockObject&Envelope
+     */
+    private MockObject $envelopeMock;
 
     protected function setUp(): void
     {
@@ -37,22 +51,21 @@ final class MailjetApiTransportTest extends TestCase
         $this->responseMock          = $this->createMock(ResponseInterface::class);
         $this->envelopeMock          = $this->createMock(Envelope::class);
 
-        $transportCallbackMock = $this->createMock(MailjetTransportCallback::class);
-        $eventDispatcherMock   = $this->createMock(EventDispatcherInterface::class);
-        $loggerMock            = $this->createMock(LoggerInterface::class);
-        $coreParameterHelper   = $this->createMock(CoreParametersHelper::class);
-        $entityManager         = $this->createMock(EntityManager::class);
+        $transportCallback = new TransportCallback(
+            $this->createStub(DoNotContact::class),
+            $this->createStub(ContactFinder::class),
+            $this->createStub(EmailStatModel::class)
+        );
 
         $this->transport = new MailjetApiTransport(
             'user',
             'pass',
             true,
-            $transportCallbackMock,
+            $transportCallback,
             $this->httpClientMock,
-            $eventDispatcherMock,
-            $loggerMock,
-            $coreParameterHelper,
-            $entityManager
+            $this->createStub(EventDispatcherInterface::class),
+            $this->createStub(LoggerInterface::class),
+            $this->createStub(EmailRepository::class)
         );
     }
 
@@ -61,9 +74,8 @@ final class MailjetApiTransportTest extends TestCase
         $this->expectException(TransportException::class);
         $this->expectExceptionMessage('Message must be an instance of '.MauticMessage::class);
 
-        $mauticMessage = $this->createMock(Email::class);
+        $mauticMessage = $this->createStub(Email::class);
 
-        /** @phpstan-ignore-next-line */
         $this->httpClientMock
             ->method('request')
             ->willReturn($this->responseMock);
@@ -78,7 +90,7 @@ final class MailjetApiTransportTest extends TestCase
             ]
         );
 
-        Assert::assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
     }
 
     public function testSendEmailWithMoreThanOneReplyToAddressIsPresent(): void
@@ -89,16 +101,13 @@ final class MailjetApiTransportTest extends TestCase
         $mauticMessage = $this->getMauticMessage();
         $mauticMessage->addReplyTo('reply1@mautic.com', 'reply2@mautic.com');
 
-        /** @phpstan-ignore-next-line */
         $this->envelopeMock
             ->method('getSender')
             ->willReturn(new Address('from@mautic.com', 'From Name'));
-        /** @phpstan-ignore-next-line */
         $this->envelopeMock
             ->method('getRecipients')
             ->willReturn([new Address('to@mautic.com', 'To Name')]);
 
-        /** @phpstan-ignore-next-line */
         $this->httpClientMock
             ->method('request')
             ->willReturn($this->responseMock);
@@ -113,32 +122,27 @@ final class MailjetApiTransportTest extends TestCase
             ]
         );
 
-        Assert::assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
     }
 
     public function testSendEmail(): void
     {
         $mauticMessage = $this->getMauticMessage();
 
-        /** @phpstan-ignore-next-line */
         $this->sentMessageMock
             ->method('getOriginalMessage')
             ->willReturn($mauticMessage);
-        /** @phpstan-ignore-next-line */
         $this->responseMock
             ->method('getStatusCode')
             ->willReturn(200);
 
-        /** @phpstan-ignore-next-line */
         $this->envelopeMock
             ->method('getSender')
             ->willReturn(new Address('from@mautic.com', 'From Name'));
-        /** @phpstan-ignore-next-line */
         $this->envelopeMock
             ->method('getRecipients')
             ->willReturn([new Address('to@mautic.com', 'To Name')]);
 
-        /** @phpstan-ignore-next-line */
         $this->httpClientMock
             ->method('request')
             ->willReturn($this->responseMock);
@@ -153,15 +157,14 @@ final class MailjetApiTransportTest extends TestCase
             ]
         );
 
-        Assert::assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
     }
 
     /**
      * @param array<string, int|string|mixed> $data
      * @param string[]                        $expected
-     *
-     * @dataProvider dataForSendEmailWhenErrorInData
      */
+    #[DataProvider('dataForSendEmailWhenErrorInData')]
     public function testSendEmailWhenErrorInData(array $data, array $expected): void
     {
         $this->expectException($expected['exceptionClass']);
@@ -169,31 +172,25 @@ final class MailjetApiTransportTest extends TestCase
 
         $mauticMessage = $this->getMauticMessage();
 
-        /** @phpstan-ignore-next-line */
         $this->sentMessageMock
             ->method('getOriginalMessage')
             ->willReturn($mauticMessage);
 
-        /** @phpstan-ignore-next-line */
         $this->responseMock
             ->method('toArray')
             ->willReturn($data['body']);
 
-        /** @phpstan-ignore-next-line */
         $this->responseMock
             ->method('getStatusCode')
             ->willReturn(400);
 
-        /** @phpstan-ignore-next-line */
         $this->envelopeMock
             ->method('getSender')
             ->willReturn(new Address('from@mautic.com', 'From Name'));
-        /** @phpstan-ignore-next-line */
         $this->envelopeMock
             ->method('getRecipients')
             ->willReturn([new Address('to@mautic.com', 'To Name')]);
 
-        /** @phpstan-ignore-next-line */
         $this->httpClientMock
             ->method('request')
             ->willReturn($this->responseMock);
@@ -208,13 +205,13 @@ final class MailjetApiTransportTest extends TestCase
             ]
         );
 
-        Assert::assertInstanceOf(ResponseInterface::class, $response);
+        $this->assertInstanceOf(ResponseInterface::class, $response);
     }
 
     /**
-     * @return array<string, array<int, array<string, mixed>>>
+     * @return iterable<string, array<int, array<string, mixed>>>
      */
-    public function dataForSendEmailWhenErrorInData(): iterable
+    public static function dataForSendEmailWhenErrorInData(): iterable
     {
         yield 'When email is without text and html' => [
             [
@@ -244,9 +241,8 @@ final class MailjetApiTransportTest extends TestCase
      */
     private function invokeInaccessibleMethod(object $object, string $methodName, array $args = []): mixed
     {
-        $reflection = new \ReflectionClass(get_class($object));
+        $reflection = new \ReflectionClass($object::class);
         $method     = $reflection->getMethod($methodName);
-        $method->setAccessible(true);
 
         return $method->invokeArgs($object, $args);
     }

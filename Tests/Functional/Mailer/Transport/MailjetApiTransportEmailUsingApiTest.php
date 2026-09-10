@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Functional\Mailer\Transport;
 
 use Mautic\CoreBundle\Test\MauticMysqlTestCase;
+use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Functional\CreateEntities;
-use PHPUnit\Framework\Assert;
 use Symfony\Component\HttpClient\MockHttpClient;
 use Symfony\Component\HttpClient\Response\MockResponse;
 use Symfony\Component\HttpFoundation\Request;
@@ -21,8 +21,6 @@ final class MailjetApiTransportEmailUsingApiTest extends MauticMysqlTestCase
     {
         $this->configParams['mailer_dsn']            = MailjetApiTransport::SCHEME.'://user:pass@default?sandbox=true';
         $this->configParams['messenger_dsn_email']   = 'sync://';
-        $this->configParams['mailer_from_email']     = 'admin@mautic.test';
-        $this->configParams['mailer_from_name']      = 'Admin';
 
         parent::setUp();
     }
@@ -32,9 +30,9 @@ final class MailjetApiTransportEmailUsingApiTest extends MauticMysqlTestCase
         /** @var MockHttpClient $mockHttpClient */
         $mockHttpClient = self::getContainer()->get(HttpClientInterface::class);
         $mockHttpClient->setResponseFactory([
-            function ($method, $url, $options): MockResponse {
-                Assert::assertSame(Request::METHOD_POST, $method);
-                Assert::assertSame('https://api.mailjet.com/v3.1/send', $url);
+            function ($method, $url, array $options): MockResponse {
+                $this->assertSame(Request::METHOD_POST, $method);
+                $this->assertSame('https://api.mailjet.com/v3.1/send', $url);
                 $this->assertRequestBody($options['body']);
 
                 return new MockResponse('{"Messages":[{"Status":"success","CustomID":"","To":[{"Email":"contact@an.email","MessageUUID":"","MessageID":0,"MessageHref":"https://api.mailjet.com/v3/REST/message/0"}],"Cc":[],"Bcc":[]}]}');
@@ -59,14 +57,14 @@ final class MailjetApiTransportEmailUsingApiTest extends MauticMysqlTestCase
         self::assertQueuedEmailCount(1);
 
         $email = self::getMailerMessage();
+        $this->assertInstanceOf(MauticMessage::class, $email);
 
         $this->assertSame('Hello {contactfield=firstname}!', $email->getSubject());
-        $this->assertStringContainsString('This is test body for {contactfield=email}!', $email->getHtmlBody());
+        $this->assertStringContainsString('This is test body for {contactfield=email}!', (string) $email->getHtmlBody());
         $this->assertSame('This is test body for {contactfield=email}!', $email->getTextBody());
-        /** @phpstan-ignore-next-line */
         $this->assertSame('john@doe.email', $email->getMetadata()['john@doe.email']['tokens']['{contactfield=email}']);
         $this->assertCount(1, $email->getFrom());
-        $this->assertSame('admin@mautic.test', $email->getFrom()[0]->getAddress());
+        $this->assertSame('hello@doe.com', $email->getFrom()[0]->getAddress());
         $this->assertCount(1, $email->getTo());
         $this->assertSame('John', $email->getTo()[0]->getName());
         $this->assertSame($lead->getEmail(), $email->getTo()[0]->getAddress());
@@ -88,7 +86,7 @@ final class MailjetApiTransportEmailUsingApiTest extends MauticMysqlTestCase
         $this->assertSame('john@doe.email', $message['To'][0]['Email']);
         $this->assertSame('Hello {contactfield=firstname}!', $message['Subject']);
         $this->assertSame('This is test body for {contactfield=email}!', $message['TextPart']);
-        $this->assertStringContainsString('This is test body for {contactfield=email}!<img height="1" width="1"', $message['HTMLPart']);
+        $this->assertStringContainsString('This is test body for {contactfield=email}!<img height="1" width="1"', (string) $message['HTMLPart']);
         $this->assertEmpty($message['ReplyTo']['Name']);
         $this->assertSame('reply@doe.com', $message['ReplyTo']['Email']);
         $this->assertSame('visibility@doe.com', $message['Bcc'][0]['Email']);

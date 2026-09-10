@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Factory;
 
-use Doctrine\ORM\EntityManager;
-use Mautic\CoreBundle\Helper\CoreParametersHelper;
+use Mautic\EmailBundle\Entity\EmailRepository;
+use Mautic\EmailBundle\Model\TransportCallback;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
-use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\EventDispatcher\EventDispatcherInterface;
 use Symfony\Component\Mailer\Exception\UnsupportedSchemeException;
@@ -20,12 +19,11 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 class MailjetTransportFactory extends AbstractTransportFactory
 {
     public function __construct(
-        private MailjetTransportCallback $transportCallback,
+        private readonly TransportCallback $transportCallback,
         EventDispatcherInterface $eventDispatcher,
-        HttpClientInterface $client = null,
-        LoggerInterface $logger = null,
-        protected CoreParametersHelper $coreParametersHelper,
-        protected EntityManager $em,
+        private readonly EmailRepository $emailRepository,
+        HttpClientInterface $client,
+        LoggerInterface $logger,
     ) {
         parent::__construct($eventDispatcher, $client, $logger);
     }
@@ -47,12 +45,16 @@ class MailjetTransportFactory extends AbstractTransportFactory
         $password = $this->getPassword($dsn);
         $sandbox  = filter_var($dsn->getOption('sandbox', false), \FILTER_VALIDATE_BOOL);
 
+        \assert($this->client instanceof HttpClientInterface);
+        \assert($this->dispatcher instanceof EventDispatcherInterface);
+        \assert($this->logger instanceof LoggerInterface);
+
         if (MailjetSmtpTransport::SCHEME === $dsn->getScheme() && $user && $password) {
             return new MailjetSmtpTransport($user, $password, $dsn->getPort(MailjetSmtpTransport::DEFAULT_PORT), $this->dispatcher, $this->logger);
         }
 
         if (MailjetApiTransport::SCHEME === $dsn->getScheme() && $user && $password) {
-            return new MailjetApiTransport($user, $password, $sandbox, $this->transportCallback, $this->client, $this->dispatcher, $this->logger, $this->coreParametersHelper, $this->em);
+            return new MailjetApiTransport($user, $password, $sandbox, $this->transportCallback, $this->client, $this->dispatcher, $this->logger, $this->emailRepository);
         }
 
         throw new UnsupportedSchemeException($dsn, 'mailjet', $this->getSupportedSchemes());
