@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport;
 
-use Doctrine\ORM\EntityManager;
-use Mautic\CoreBundle\Helper\CoreParametersHelper;
+use Mautic\EmailBundle\Entity\EmailRepository;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportTrait;
+use Mautic\EmailBundle\Model\TransportCallback;
 use Mautic\LeadBundle\Entity\DoNotContact;
 use Psr\EventDispatcher\EventDispatcherInterface;
 use Psr\Log\LoggerInterface;
@@ -43,19 +43,19 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         'X-Mailjet-Debug', 'User-Agent', 'X-Mailer', 'X-MJ-WorkflowID',
     ];
 
+    /** @var callable|null */
     private $manipulatePayload;
 
     public function __construct(
         private string $user,
         private string $password,
         private bool $sandbox,
-        private MailjetTransportCallback $callback,
-        HttpClientInterface $client = null,
-        EventDispatcherInterface $dispatcher = null,
-        LoggerInterface $logger = null,
-        private CoreParametersHelper $coreParametersHelper,
-        private EntityManager $em,
-        callable $manipulateMetadata = null,
+        private TransportCallback $callback,
+        HttpClientInterface $client,
+        EventDispatcherInterface $dispatcher,
+        LoggerInterface $logger,
+        private EmailRepository $emailRepository,
+        ?callable $manipulateMetadata = null,
     ) {
         parent::__construct($client, $dispatcher, $logger);
         $this->manipulatePayload = $manipulateMetadata;
@@ -93,7 +93,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
 
             $this->processResponse($response, $email, $payload);
         } catch (\Exception $e) {
-            throw new TransportException($e->getMessage());
+            throw new TransportException($e->getMessage(), $e->getCode(), $e);
         }
 
         return $response;
@@ -129,7 +129,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         }
 
         $metadata = $email->getMetadata();
-        if (is_array($metadata) && count($metadata) > 0) {
+        if (count($metadata) > 0) {
             $payload = $this->preparePayloadFromMetadata($metadata, $email, $envelope);
         } else {
             $payload = $this->preparePayloadFromTestMail($email, $envelope);
@@ -168,7 +168,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
                 'TemplateLanguage' => true,
             ];
 
-            if (!empty($newTokens)) {
+            if ([] !== $newTokens) {
                 $emailData['Variables'] = $newTokens;
             }
 
@@ -275,7 +275,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $metadata = $email->getMetadata();
             $metadata = reset($metadata);
             if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
-                $emailEntity     = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
+                $emailEntity     = $this->emailRepository->find($metadata['emailId']);
                 $entityEmailFrom = $emailEntity->getFromAddress();
                 $entityNameFrom  = $emailEntity->getFromName();
             }
@@ -302,12 +302,12 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $metadata = $email->getMetadata();
             $metadata = reset($metadata);
             if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
-                $emailEntity   = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
+                $emailEntity   = $this->emailRepository->find($metadata['emailId']);
                 $entityReplyTo = $emailEntity->getReplyToAddress();
                 if (!empty($entityReplyTo)) {
                     $entityReplyTo = explode(',', $entityReplyTo);
 
-                    return array_map(fn ($email): \Symfony\Component\Mime\Address => new Address($email), $entityReplyTo);
+                    return array_map(fn ($email): Address => new Address($email), $entityReplyTo);
                 }
             }
         }
@@ -322,7 +322,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
      */
     private function formatAddresses(array $addresses): array
     {
-        return array_map(\Closure::fromCallable([$this, 'formatAddress']), $addresses);
+        return array_map($this->formatAddress(...), $addresses);
     }
 
     /**
@@ -425,8 +425,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         return $retTokens;
     }
 
-    private function cleanEmail(string $email)
+    private function cleanEmail(string $email): string
     {
-        return preg_replace('/\+\d+/', '', $email);
+        return preg_replace('/\+\d+/', '', $email) ?? $email;
     }
 }

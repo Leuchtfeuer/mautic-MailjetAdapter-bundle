@@ -17,7 +17,7 @@ final class CallbackSubscriberFunctionalTest extends MauticMysqlTestCase
 {
     protected function setUp(): void
     {
-        if ('testMailjetTransportWhenNoEmailDsnConfigured' !== $this->getName()) {
+        if ('testMailjetTransportWhenNoEmailDsnConfigured' !== $this->name()) {
             $this->configParams['mailer_dsn'] = MailjetSmtpTransport::SCHEME.'://user:pass@host:25';
         }
 

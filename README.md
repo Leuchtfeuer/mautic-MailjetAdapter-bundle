@@ -1,13 +1,11 @@
-# DEPRECATED Plugin: Mailjet Adapter by Leuchtfeuer
-
-
+# Plugin: Mailjet Adapter by Leuchtfeuer
 
 ## Overview / Purpose / Features
-This plugin enable Mautic 5 to run Mailjet as a email transport, including bulk sending via API, and catching bounces and other feedback via Webhook.
+This plugin enable Mautic 7 to run Mailjet as a email transport, including bulk sending via API, and catching bounces and other feedback via Webhook.
 
 ## Requirements for this release
-- Mautic 5.x (minimum 5.1)
-- PHP 8.0 or higher
+- Mautic 7.x
+- PHP 8.2 or higher
 
 ## Installation
 ### Composer
@@ -85,7 +83,6 @@ If things are still funny, please try
 ## Change log
 - https://github.com/Leuchtfeuer/mautic-MailjetAdapter-bundle/releases
 ## Future Ideas
-- Plugin DEPRECTAED - No future improvements intended
 ## Sponsoring & Commercial Support
 We are continuously improving our plugins. If you are requiring priority support or custom features, please contact us at mautic-plugins@leuchtfeuer.com.
 ## Get Involved

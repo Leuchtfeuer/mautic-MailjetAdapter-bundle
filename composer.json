@@ -18,11 +18,8 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "require": {
-        "php": ">=8.0.0",
-        "mautic/core-lib": "^5.0"
-    },
-    "require-dev": {
-        "phpunit/phpunit": "^9.5"
+        "php": "^8.2",
+        "mautic/core-lib": "^7.0"
     },
     "keywords": [
         "mautic",
@@ -35,6 +32,11 @@
     "autoload": {
         "psr-4": {
             "MauticPlugin\\LeuchtfeuerMailjetAdapterBundle\\": ""
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MauticPlugin\\LeuchtfeuerMailjetAdapterBundle\\Tests\\": "Tests"
         }
     },
     "scripts": {
