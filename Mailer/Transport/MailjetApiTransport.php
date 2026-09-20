@@ -35,6 +35,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     public const HOST         = 'api.mailjet.com';
     private const API_VERSION = '3.1';
 
+    public const DEFAULT_PORT = 443;
+
     private const FORBIDDEN_HEADERS = [
         'Date', 'X-CSA-Complaints', 'Message-Id', 'X-MJ-StatisticsContactsListID',
         'DomainKey-Status', 'Received-SPF', 'Authentication-Results', 'Received',
@@ -46,16 +48,17 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     private $manipulatePayload;
 
     public function __construct(
-        private string $user,
-        private string $password,
-        private bool $sandbox,
+        private string                   $user,
+        private string                   $password,
+        private bool                     $sandbox,
         private MailjetTransportCallback $callback,
-        HttpClientInterface $client = null,
-        EventDispatcherInterface $dispatcher = null,
-        LoggerInterface $logger = null,
-        private CoreParametersHelper $coreParametersHelper,
-        private EntityManager $em,
-        callable $manipulateMetadata = null,
+        HttpClientInterface              $client = null,
+        EventDispatcherInterface         $dispatcher = null,
+        LoggerInterface                  $logger = null,
+        private CoreParametersHelper     $coreParametersHelper,
+        private EntityManager            $em,
+        callable                         $manipulateMetadata = null,
+        protected                        $port,
     ) {
         parent::__construct($client, $dispatcher, $logger);
         $this->manipulatePayload = $manipulateMetadata;
