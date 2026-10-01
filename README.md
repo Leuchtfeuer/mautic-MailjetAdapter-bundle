@@ -85,7 +85,7 @@ If things are still funny, please try
 ## Change log
 - https://github.com/Leuchtfeuer/mautic-MailjetAdapter-bundle/releases
 ## Future Ideas
-- Plugin DEPRECTAED - No future improvements intended
+-
 ## Sponsoring & Commercial Support
 We are continuously improving our plugins. If you are requiring priority support or custom features, please contact us at mautic-plugins@leuchtfeuer.com.
 ## Get Involved
