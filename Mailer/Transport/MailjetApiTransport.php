@@ -275,9 +275,21 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $metadata = $email->getMetadata();
             $metadata = reset($metadata);
             if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
-                $emailEntity     = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
-                $entityEmailFrom = $emailEntity->getFromAddress();
-                $entityNameFrom  = $emailEntity->getFromName();
+                $emailEntity = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
+                if (null !== $emailEntity) {
+                    $entityEmailFrom = (string) ($emailEntity->getFromAddress() ?? '');
+                    $entityNameFrom  = (string) ($emailEntity->getFromName() ?? '');
+
+                    // Unresolved contact-field tokens are not RFC-compliant addresses.
+                    // Prefer envelope/message From (e.g. resolved by Dynamic Sender / MailHelper).
+                    // Plain addresses on the email entity keep overriding the envelope as before.
+                    if ($this->containsContactFieldToken($entityEmailFrom)) {
+                        $entityEmailFrom = '';
+                    }
+                    if ($this->containsContactFieldToken($entityNameFrom)) {
+                        $entityNameFrom = '';
+                    }
+                }
             }
         }
 
@@ -303,8 +315,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $metadata = reset($metadata);
             if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
                 $emailEntity   = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
-                $entityReplyTo = $emailEntity->getReplyToAddress();
-                if (!empty($entityReplyTo)) {
+                $entityReplyTo = null !== $emailEntity ? $emailEntity->getReplyToAddress() : null;
+                if (!empty($entityReplyTo) && !$this->containsContactFieldToken($entityReplyTo)) {
                     $entityReplyTo = explode(',', $entityReplyTo);
 
                     return array_map(fn ($email): \Symfony\Component\Mime\Address => new Address($email), $entityReplyTo);
@@ -313,6 +325,15 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         }
 
         return $email->getReplyTo();
+    }
+
+    private function containsContactFieldToken(?string $value): bool
+    {
+        if (null === $value || '' === $value) {
+            return false;
+        }
+
+        return 1 === preg_match('/\{contactfield=.*?\}/', $value);
     }
 
     /**

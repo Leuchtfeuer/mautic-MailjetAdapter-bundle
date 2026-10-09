@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Unit\Mailer\Transport;
 
 use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\EntityRepository;
 use Mautic\CoreBundle\Helper\CoreParametersHelper;
+use Mautic\EmailBundle\Entity\Email as EmailEntity;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
@@ -29,6 +31,7 @@ final class MailjetApiTransportTest extends TestCase
     private SentMessage|MockObject $sentMessageMock;
     private ResponseInterface|MockObject $responseMock;
     private Envelope|MockObject $envelopeMock;
+    private EntityManager|MockObject $entityManager;
 
     protected function setUp(): void
     {
@@ -36,12 +39,12 @@ final class MailjetApiTransportTest extends TestCase
         $this->sentMessageMock       = $this->createMock(SentMessage::class);
         $this->responseMock          = $this->createMock(ResponseInterface::class);
         $this->envelopeMock          = $this->createMock(Envelope::class);
+        $this->entityManager         = $this->createMock(EntityManager::class);
 
         $transportCallbackMock = $this->createMock(MailjetTransportCallback::class);
         $eventDispatcherMock   = $this->createMock(EventDispatcherInterface::class);
         $loggerMock            = $this->createMock(LoggerInterface::class);
         $coreParameterHelper   = $this->createMock(CoreParametersHelper::class);
-        $entityManager         = $this->createMock(EntityManager::class);
 
         $this->transport = new MailjetApiTransport(
             'user',
@@ -52,7 +55,7 @@ final class MailjetApiTransportTest extends TestCase
             $eventDispatcherMock,
             $loggerMock,
             $coreParameterHelper,
-            $entityManager
+            $this->entityManager
         );
     }
 
@@ -235,6 +238,135 @@ final class MailjetApiTransportTest extends TestCase
                 'exceptionMessage' => 'Unable to send an email: "Malformed JSON, please review the syntax and properties types. (code 400)',
             ],
         ];
+    }
+
+    public function testPreparePayloadUsesEntityFromWhenPlainAddress(): void
+    {
+        $emailEntity = new EmailEntity();
+        $emailEntity->setFromAddress('entity@example.com');
+        $emailEntity->setFromName('Entity Name');
+        $this->mockEmailEntityLookup(42, $emailEntity);
+
+        $message = $this->getMauticMessageWithEmailId(42);
+        $envelope = new Envelope(
+            new Address('envelope@example.com', 'Envelope Name'),
+            [new Address('to@mautic.com', 'To Name')]
+        );
+
+        $payload = $this->transport->preparePayloadFromMetadata($message->getMetadata(), $message, $envelope);
+
+        Assert::assertSame('entity@example.com', $payload['Messages'][0]['From']['Email']);
+        Assert::assertSame('Entity Name', $payload['Messages'][0]['From']['Name']);
+    }
+
+    public function testPreparePayloadFallsBackToEnvelopeWhenEntityFromIsTokenized(): void
+    {
+        $emailEntity = new EmailEntity();
+        $emailEntity->setFromAddress('{contactfield=vbe_mail_contact}');
+        $emailEntity->setFromName('{contactfield=firstname}');
+        $this->mockEmailEntityLookup(42, $emailEntity);
+
+        $message = $this->getMauticMessageWithEmailId(42);
+        $envelope = new Envelope(
+            new Address('resolved@example.com', 'Resolved Name'),
+            [new Address('to@mautic.com', 'To Name')]
+        );
+
+        $payload = $this->transport->preparePayloadFromMetadata($message->getMetadata(), $message, $envelope);
+
+        Assert::assertSame('resolved@example.com', $payload['Messages'][0]['From']['Email']);
+        Assert::assertSame('Resolved Name', $payload['Messages'][0]['From']['Name']);
+    }
+
+    public function testPreparePayloadFallsBackOnlyTokenizedPartsOfFrom(): void
+    {
+        $emailEntity = new EmailEntity();
+        $emailEntity->setFromAddress('{contactfield=vbe_mail_contact}');
+        $emailEntity->setFromName('Static Display Name');
+        $this->mockEmailEntityLookup(42, $emailEntity);
+
+        $message = $this->getMauticMessageWithEmailId(42);
+        $envelope = new Envelope(
+            new Address('resolved@example.com', 'Envelope Name'),
+            [new Address('to@mautic.com', 'To Name')]
+        );
+
+        $payload = $this->transport->preparePayloadFromMetadata($message->getMetadata(), $message, $envelope);
+
+        Assert::assertSame('resolved@example.com', $payload['Messages'][0]['From']['Email']);
+        Assert::assertSame('Static Display Name', $payload['Messages'][0]['From']['Name']);
+    }
+
+    public function testPreparePayloadFallsBackToMessageReplyToWhenEntityReplyToIsTokenized(): void
+    {
+        $emailEntity = new EmailEntity();
+        $emailEntity->setFromAddress('entity@example.com');
+        $emailEntity->setReplyToAddress('{contactfield=vbe_mail_contact}');
+        $this->mockEmailEntityLookup(42, $emailEntity);
+
+        $message = $this->getMauticMessageWithEmailId(42);
+        $message->replyTo(new Address('message-reply@example.com', 'Message Reply'));
+        $envelope = new Envelope(
+            new Address('envelope@example.com', 'Envelope Name'),
+            [new Address('to@mautic.com', 'To Name')]
+        );
+
+        $payload = $this->transport->preparePayloadFromMetadata($message->getMetadata(), $message, $envelope);
+
+        Assert::assertSame('message-reply@example.com', $payload['Messages'][0]['ReplyTo']['Email']);
+        Assert::assertSame('Message Reply', $payload['Messages'][0]['ReplyTo']['Name']);
+    }
+
+    public function testPreparePayloadUsesEntityReplyToWhenPlainAddress(): void
+    {
+        $emailEntity = new EmailEntity();
+        $emailEntity->setFromAddress('entity@example.com');
+        $emailEntity->setReplyToAddress('entity-reply@example.com');
+        $this->mockEmailEntityLookup(42, $emailEntity);
+
+        $message = $this->getMauticMessageWithEmailId(42);
+        $message->replyTo(new Address('message-reply@example.com', 'Message Reply'));
+        $envelope = new Envelope(
+            new Address('envelope@example.com', 'Envelope Name'),
+            [new Address('to@mautic.com', 'To Name')]
+        );
+
+        $payload = $this->transport->preparePayloadFromMetadata($message->getMetadata(), $message, $envelope);
+
+        Assert::assertSame('entity-reply@example.com', $payload['Messages'][0]['ReplyTo']['Email']);
+    }
+
+    private function mockEmailEntityLookup(int $emailId, EmailEntity $emailEntity): void
+    {
+        /** @var EntityRepository&MockObject $repository */
+        $repository = $this->createMock(EntityRepository::class);
+        $repository->expects($this->atLeastOnce())
+            ->method('find')
+            ->with($emailId)
+            ->willReturn($emailEntity);
+
+        $this->entityManager->expects($this->atLeastOnce())
+            ->method('getRepository')
+            ->with(EmailEntity::class)
+            ->willReturn($repository);
+    }
+
+    private function getMauticMessageWithEmailId(int $emailId): MauticMessage
+    {
+        $mauticMessage = new MauticMessage();
+        $mauticMessage->to(new Address('to@mautic.com', 'To Name'));
+        $mauticMessage->subject('Hello');
+        $mauticMessage->text('Body');
+        $mauticMessage->html('<p>Body</p>');
+        $mauticMessage->addMetadata('to@mautic.com', [
+            'leadId'   => '123',
+            'hashId'   => 'hash-123',
+            'emailId'  => $emailId,
+            'name'     => 'To Name',
+            'tokens'   => [],
+        ]);
+
+        return $mauticMessage;
     }
 
     /**
