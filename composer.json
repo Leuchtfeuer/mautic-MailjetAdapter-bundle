@@ -46,6 +46,11 @@
             "@unit",
             "@csfixer"
         ],
+        "all": [
+            "@fixcs",
+            "@phpstan",
+            "@phpunit"
+        ],
         "phpunit": "../../bin/phpunit -d memory_limit=1G  --bootstrap ../../vendor/autoload.php --configuration phpunit.xml.dist --fail-on-warning --testsuite=all",
         "unit": "../../bin/phpunit -d memory_limit=1G  --bootstrap ../../vendor/autoload.php --configuration phpunit.xml.dist --fail-on-warning --testsuite=unit",
         "functional": "../../bin/phpunit -d memory_limit=1G  --bootstrap ../../vendor/autoload.php --configuration phpunit.xml.dist --fail-on-warning --testsuite=functional",
