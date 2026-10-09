@@ -6,7 +6,6 @@ namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Unit\Mailer\Transpo
 
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
-use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\Entity\Email as EmailEntity;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
@@ -44,7 +43,6 @@ final class MailjetApiTransportTest extends TestCase
         $transportCallbackMock = $this->createMock(MailjetTransportCallback::class);
         $eventDispatcherMock   = $this->createMock(EventDispatcherInterface::class);
         $loggerMock            = $this->createMock(LoggerInterface::class);
-        $coreParameterHelper   = $this->createMock(CoreParametersHelper::class);
 
         $this->transport = new MailjetApiTransport(
             'user',
@@ -54,7 +52,6 @@ final class MailjetApiTransportTest extends TestCase
             $this->httpClientMock,
             $eventDispatcherMock,
             $loggerMock,
-            $coreParameterHelper,
             $this->entityManager
         );
     }
@@ -338,7 +335,7 @@ final class MailjetApiTransportTest extends TestCase
 
     private function mockEmailEntityLookup(int $emailId, EmailEntity $emailEntity): void
     {
-        /** @var EntityRepository&MockObject $repository */
+        /** @var EntityRepository<EmailEntity>&MockObject $repository */
         $repository = $this->createMock(EntityRepository::class);
         $repository->expects($this->atLeastOnce())
             ->method('find')

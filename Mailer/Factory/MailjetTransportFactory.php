@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Factory;
 
 use Doctrine\ORM\EntityManager;
-use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetSmtpTransport;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetTransportCallback;
@@ -24,7 +23,6 @@ class MailjetTransportFactory extends AbstractTransportFactory
         EventDispatcherInterface $eventDispatcher,
         HttpClientInterface $client = null,
         LoggerInterface $logger = null,
-        protected CoreParametersHelper $coreParametersHelper,
         protected EntityManager $em,
     ) {
         parent::__construct($eventDispatcher, $client, $logger);
@@ -52,7 +50,7 @@ class MailjetTransportFactory extends AbstractTransportFactory
         }
 
         if (MailjetApiTransport::SCHEME === $dsn->getScheme() && $user && $password) {
-            return new MailjetApiTransport($user, $password, $sandbox, $this->transportCallback, $this->client, $this->dispatcher, $this->logger, $this->coreParametersHelper, $this->em);
+            return new MailjetApiTransport($user, $password, $sandbox, $this->transportCallback, $this->client, $this->dispatcher, $this->logger, $this->em);
         }
 
         throw new UnsupportedSchemeException($dsn, 'mailjet', $this->getSupportedSchemes());

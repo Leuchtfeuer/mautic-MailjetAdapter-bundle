@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport;
 
 use Doctrine\ORM\EntityManager;
-use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportTrait;
@@ -43,6 +42,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         'X-Mailjet-Debug', 'User-Agent', 'X-Mailer', 'X-MJ-WorkflowID',
     ];
 
+    /** @var callable|null */
     private $manipulatePayload;
 
     public function __construct(
@@ -53,7 +53,6 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         HttpClientInterface $client = null,
         EventDispatcherInterface $dispatcher = null,
         LoggerInterface $logger = null,
-        private CoreParametersHelper $coreParametersHelper,
         private EntityManager $em,
         callable $manipulateMetadata = null,
     ) {
@@ -446,8 +445,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         return $retTokens;
     }
 
-    private function cleanEmail(string $email)
+    private function cleanEmail(string $email): string
     {
-        return preg_replace('/\+\d+/', '', $email);
+        return (string) preg_replace('/\+\d+/', '', $email);
     }
 }
