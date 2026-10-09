@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport;
 
 use Doctrine\ORM\EntityManager;
-use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportTrait;
@@ -43,6 +42,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         'X-Mailjet-Debug', 'User-Agent', 'X-Mailer', 'X-MJ-WorkflowID',
     ];
 
+    /** @var callable|null */
     private $manipulatePayload;
 
     public function __construct(
@@ -53,7 +53,6 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         HttpClientInterface $client = null,
         EventDispatcherInterface $dispatcher = null,
         LoggerInterface $logger = null,
-        private CoreParametersHelper $coreParametersHelper,
         private EntityManager $em,
         callable $manipulateMetadata = null,
     ) {
@@ -275,9 +274,21 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $metadata = $email->getMetadata();
             $metadata = reset($metadata);
             if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
-                $emailEntity     = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
-                $entityEmailFrom = $emailEntity->getFromAddress();
-                $entityNameFrom  = $emailEntity->getFromName();
+                $emailEntity = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
+                if (null !== $emailEntity) {
+                    $entityEmailFrom = (string) ($emailEntity->getFromAddress() ?? '');
+                    $entityNameFrom  = (string) ($emailEntity->getFromName() ?? '');
+
+                    // Unresolved contact-field tokens are not RFC-compliant addresses.
+                    // Prefer envelope/message From (e.g. resolved by Dynamic Sender / MailHelper).
+                    // Plain addresses on the email entity keep overriding the envelope as before.
+                    if ($this->containsContactFieldToken($entityEmailFrom)) {
+                        $entityEmailFrom = '';
+                    }
+                    if ($this->containsContactFieldToken($entityNameFrom)) {
+                        $entityNameFrom = '';
+                    }
+                }
             }
         }
 
@@ -303,8 +314,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $metadata = reset($metadata);
             if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
                 $emailEntity   = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
-                $entityReplyTo = $emailEntity->getReplyToAddress();
-                if (!empty($entityReplyTo)) {
+                $entityReplyTo = null !== $emailEntity ? $emailEntity->getReplyToAddress() : null;
+                if (!empty($entityReplyTo) && !$this->containsContactFieldToken($entityReplyTo)) {
                     $entityReplyTo = explode(',', $entityReplyTo);
 
                     return array_map(fn ($email): \Symfony\Component\Mime\Address => new Address($email), $entityReplyTo);
@@ -313,6 +324,15 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         }
 
         return $email->getReplyTo();
+    }
+
+    private function containsContactFieldToken(?string $value): bool
+    {
+        if (null === $value || '' === $value) {
+            return false;
+        }
+
+        return 1 === preg_match('/\{contactfield=.*?\}/', $value);
     }
 
     /**
@@ -425,8 +445,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         return $retTokens;
     }
 
-    private function cleanEmail(string $email)
+    private function cleanEmail(string $email): string
     {
-        return preg_replace('/\+\d+/', '', $email);
+        return (string) preg_replace('/\+\d+/', '', $email);
     }
 }
