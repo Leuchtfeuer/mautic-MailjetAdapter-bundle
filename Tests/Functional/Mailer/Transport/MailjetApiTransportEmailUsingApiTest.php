@@ -63,7 +63,6 @@ final class MailjetApiTransportEmailUsingApiTest extends MauticMysqlTestCase
         $this->assertSame('Hello {contactfield=firstname}!', $email->getSubject());
         $this->assertStringContainsString('This is test body for {contactfield=email}!', $email->getHtmlBody());
         $this->assertSame('This is test body for {contactfield=email}!', $email->getTextBody());
-        /** @phpstan-ignore-next-line */
         $this->assertSame('john@doe.email', $email->getMetadata()['john@doe.email']['tokens']['{contactfield=email}']);
         $this->assertCount(1, $email->getFrom());
         $this->assertSame('admin@mautic.test', $email->getFrom()[0]->getAddress());

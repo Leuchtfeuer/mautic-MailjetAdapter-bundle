@@ -247,7 +247,7 @@ final class MailjetApiTransportTest extends TestCase
         $emailEntity->setFromName('Entity Name');
         $this->mockEmailEntityLookup(42, $emailEntity);
 
-        $message = $this->getMauticMessageWithEmailId(42);
+        $message  = $this->getMauticMessageWithEmailId(42);
         $envelope = new Envelope(
             new Address('envelope@example.com', 'Envelope Name'),
             [new Address('to@mautic.com', 'To Name')]
@@ -266,7 +266,7 @@ final class MailjetApiTransportTest extends TestCase
         $emailEntity->setFromName('{contactfield=firstname}');
         $this->mockEmailEntityLookup(42, $emailEntity);
 
-        $message = $this->getMauticMessageWithEmailId(42);
+        $message  = $this->getMauticMessageWithEmailId(42);
         $envelope = new Envelope(
             new Address('resolved@example.com', 'Resolved Name'),
             [new Address('to@mautic.com', 'To Name')]
@@ -285,7 +285,7 @@ final class MailjetApiTransportTest extends TestCase
         $emailEntity->setFromName('Static Display Name');
         $this->mockEmailEntityLookup(42, $emailEntity);
 
-        $message = $this->getMauticMessageWithEmailId(42);
+        $message  = $this->getMauticMessageWithEmailId(42);
         $envelope = new Envelope(
             new Address('resolved@example.com', 'Envelope Name'),
             [new Address('to@mautic.com', 'To Name')]
