@@ -47,10 +47,12 @@
             "@csfixer"
         ],
         "all": [
+            "@rector",
             "@fixcs",
             "@phpstan",
             "@phpunit"
         ],
+        "rector": "cd ../.. && bin/rector process --ansi --config rector.php plugins/LeuchtfeuerMailjetAdapterBundle",
         "phpunit": "../../bin/phpunit -d memory_limit=1G  --bootstrap ../../vendor/autoload.php --configuration phpunit.xml.dist --fail-on-warning --testsuite=all",
         "unit": "../../bin/phpunit -d memory_limit=1G  --bootstrap ../../vendor/autoload.php --configuration phpunit.xml.dist --fail-on-warning --testsuite=unit",
         "functional": "../../bin/phpunit -d memory_limit=1G  --bootstrap ../../vendor/autoload.php --configuration phpunit.xml.dist --fail-on-warning --testsuite=functional",
