@@ -359,6 +359,34 @@ final class MailjetApiTransportTest extends TestCase
         Assert::assertSame('Bob', $payload['Messages'][1]['From']['Name']);
     }
 
+    public function testPreparePayloadFallsBackWhenDynamicSenderFromIsInvalid(): void
+    {
+        $emailEntity = new EmailEntity();
+        $emailEntity->setFromAddress('{contactfield=vbe_mail_contact}');
+        $this->mockEmailEntityLookup(42, $emailEntity);
+
+        $message = $this->getMauticMessageWithEmailId(42);
+        $message->from(new Address('fallback@example.com', 'Fallback'));
+        $message->addMetadata('to@mautic.com', [
+            'leadId'            => '123',
+            'hashId'            => 'hash-123',
+            'emailId'           => 42,
+            'name'              => 'To Name',
+            'tokens'            => [],
+            'dynamicSenderFrom' => ['email' => 'not an email', 'name' => 'Broken'],
+        ]);
+
+        $envelope = new Envelope(
+            new Address('return-path@example.com', 'Return Path'),
+            [new Address('to@mautic.com', 'To Name')]
+        );
+
+        $payload = $this->transport->preparePayloadFromMetadata($message->getMetadata(), $message, $envelope);
+
+        Assert::assertSame('fallback@example.com', $payload['Messages'][0]['From']['Email']);
+        Assert::assertSame('Fallback', $payload['Messages'][0]['From']['Name']);
+    }
+
     public function testPreparePayloadFallsBackToMessageReplyToWhenEntityReplyToIsTokenized(): void
     {
         $emailEntity = new EmailEntity();

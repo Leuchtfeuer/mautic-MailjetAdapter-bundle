@@ -288,10 +288,14 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         ) {
             $name = $leadData[self::DYNAMIC_SENDER_FROM_KEY]['name'] ?? '';
 
-            return new Address(
-                $leadData[self::DYNAMIC_SENDER_FROM_KEY]['email'],
-                is_string($name) ? $name : ''
-            );
+            try {
+                return new Address(
+                    $leadData[self::DYNAMIC_SENDER_FROM_KEY]['email'],
+                    is_string($name) ? $name : ''
+                );
+            } catch (\InvalidArgumentException) {
+                // Non-RFC address (e.g. non-email custom field) — fall through to entity/message From.
+            }
         }
 
         $entityEmailFrom = '';
