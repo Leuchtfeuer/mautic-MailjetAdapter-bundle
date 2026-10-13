@@ -43,6 +43,13 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         'X-Mailjet-Debug', 'User-Agent', 'X-Mailer', 'X-MJ-WorkflowID',
     ];
 
+    /**
+     * Per-contact From stamped by LeuchtfeuerDynamicSenderBundle (DynamicSenderMetadata::FROM_KEY).
+     * Shape: ['email' => string, 'name' => string].
+     */
+    private const DYNAMIC_SENDER_FROM_KEY = 'dynamicSenderFrom';
+
+    /** @var callable|null */
     private $manipulatePayload;
 
     public function __construct(
@@ -53,11 +60,15 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         HttpClientInterface $client = null,
         EventDispatcherInterface $dispatcher = null,
         LoggerInterface $logger = null,
-        private CoreParametersHelper $coreParametersHelper,
+        // Unused on purpose: kept for BC with ControlDuplicateEmailBundle CustomMailFactory,
+        // which still passes CoreParametersHelper before EntityManager. Not stored as a
+        // property so PHPStan does not flag it as write-only.
+        CoreParametersHelper $coreParametersHelper,
         private EntityManager $em,
         callable $manipulateMetadata = null,
     ) {
         parent::__construct($client, $dispatcher, $logger);
+        unset($coreParametersHelper);
         $this->manipulatePayload = $manipulateMetadata;
         $this->host              = self::HOST;
     }
@@ -159,7 +170,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $attachments   = $this->prepareAttachments($email);
             $newTokens     = $this->prepareTokenFromLeadMetadata($email, $leadData);
             $emailData     = [
-                'From'             => $this->formatAddress($this->getEmailFrom($email, $envelope)),
+                'From'             => $this->formatAddress($this->getEmailFrom($email, $envelope, $leadData)),
                 'To'               => $to,
                 'Subject'          => $email->getSubject(),
                 'Attachments'      => $attachments,
@@ -213,7 +224,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     public function preparePayloadFromTestMail(MauticMessage $email, Envelope $envelope): array
     {
         $message     = [
-            'From'             => $this->formatAddress($envelope->getSender()),
+            'From'             => $this->formatAddress($this->resolveFallbackFrom($email, $envelope)),
             'To'               => $this->formatAddresses($this->getRecipients($email, $envelope)),
             'Subject'          => $email->getSubject(),
             'TextPart'         => $email->getTextBody(),
@@ -266,8 +277,27 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         ];
     }
 
-    private function getEmailFrom(Email $email, Envelope $envelope): Address
+    /**
+     * @param array<string, mixed> $leadData Recipient metadata for the current Messages[] entry
+     */
+    private function getEmailFrom(Email $email, Envelope $envelope, array $leadData = []): Address
     {
+        // Prefer per-contact From from Dynamic Sender (tokenized batch sends).
+        if (!empty($leadData[self::DYNAMIC_SENDER_FROM_KEY]['email'])
+            && is_string($leadData[self::DYNAMIC_SENDER_FROM_KEY]['email'])
+        ) {
+            $name = $leadData[self::DYNAMIC_SENDER_FROM_KEY]['name'] ?? '';
+
+            try {
+                return new Address(
+                    $leadData[self::DYNAMIC_SENDER_FROM_KEY]['email'],
+                    is_string($name) ? $name : ''
+                );
+            } catch (\InvalidArgumentException) {
+                // Non-RFC address (e.g. non-email custom field) — fall through to entity/message From.
+            }
+        }
+
         $entityEmailFrom = '';
         $entityNameFrom  = '';
 
@@ -275,13 +305,25 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $metadata = $email->getMetadata();
             $metadata = reset($metadata);
             if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
-                $emailEntity     = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
-                $entityEmailFrom = $emailEntity->getFromAddress();
-                $entityNameFrom  = $emailEntity->getFromName();
+                $emailEntity = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
+                if (null !== $emailEntity) {
+                    $entityEmailFrom = (string) ($emailEntity->getFromAddress() ?? '');
+                    $entityNameFrom  = (string) ($emailEntity->getFromName() ?? '');
+
+                    // Unresolved contact-field tokens are not RFC-compliant addresses.
+                    // Prefer message From (e.g. resolved by Dynamic Sender / MailHelper).
+                    // Plain addresses on the email entity keep overriding as before.
+                    if ($this->containsContactFieldToken($entityEmailFrom)) {
+                        $entityEmailFrom = '';
+                    }
+                    if ($this->containsContactFieldToken($entityNameFrom)) {
+                        $entityNameFrom = '';
+                    }
+                }
             }
         }
 
-        $address = $envelope->getSender();
+        $address = $this->resolveFallbackFrom($email, $envelope);
         if (empty($entityEmailFrom)) {
             $entityEmailFrom = $address->getAddress();
         }
@@ -294,6 +336,18 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     }
 
     /**
+     * Prefer message From over Envelope::getSender().
+     * With mailer_return_path set, getSender() returns Return-Path (Symfony order:
+     * Sender → Return-Path → From), not the From resolved by Dynamic Sender / MailHelper.
+     */
+    private function resolveFallbackFrom(Email $email, Envelope $envelope): Address
+    {
+        $from = $email->getFrom();
+
+        return $from[0] ?? $envelope->getSender();
+    }
+
+    /**
      * @return array<int, Address>
      */
     private function getReplyTo(Email $email): array
@@ -303,8 +357,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $metadata = reset($metadata);
             if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
                 $emailEntity   = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
-                $entityReplyTo = $emailEntity->getReplyToAddress();
-                if (!empty($entityReplyTo)) {
+                $entityReplyTo = null !== $emailEntity ? $emailEntity->getReplyToAddress() : null;
+                if (!empty($entityReplyTo) && !$this->containsContactFieldToken($entityReplyTo)) {
                     $entityReplyTo = explode(',', $entityReplyTo);
 
                     return array_map(fn ($email): \Symfony\Component\Mime\Address => new Address($email), $entityReplyTo);
@@ -313,6 +367,15 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         }
 
         return $email->getReplyTo();
+    }
+
+    private function containsContactFieldToken(?string $value): bool
+    {
+        if (null === $value || '' === $value) {
+            return false;
+        }
+
+        return 1 === preg_match('/\{contactfield=.*?\}/', $value);
     }
 
     /**
@@ -425,8 +488,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         return $retTokens;
     }
 
-    private function cleanEmail(string $email)
+    private function cleanEmail(string $email): string
     {
-        return preg_replace('/\+\d+/', '', $email);
+        return (string) preg_replace('/\+\d+/', '', $email);
     }
 }

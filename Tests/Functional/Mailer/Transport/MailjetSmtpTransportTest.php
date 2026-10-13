@@ -99,7 +99,6 @@ final class MailjetSmtpTransportTest extends MauticMysqlTestCase
         $this->assertSame('Hello there!', $email->getSubject());
         $this->assertStringContainsString('This is test body for contact@an.email!', $email->getHtmlBody());
         $this->assertSame('This is test body for contact@an.email!', $email->getTextBody());
-        /** @phpstan-ignore-next-line */
         $this->assertSame('contact@an.email', $email->getMetadata()['contact@an.email']['tokens']['{contactfield=email}']);
         $this->assertCount(1, $email->getFrom());
         $this->assertSame($user->getName(), $email->getFrom()[0]->getName());

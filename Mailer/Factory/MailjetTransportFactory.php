@@ -24,6 +24,7 @@ class MailjetTransportFactory extends AbstractTransportFactory
         EventDispatcherInterface $eventDispatcher,
         HttpClientInterface $client = null,
         LoggerInterface $logger = null,
+        // Kept for BC / DI parity with ControlDuplicateEmailBundle CustomMailFactory.
         protected CoreParametersHelper $coreParametersHelper,
         protected EntityManager $em,
     ) {
