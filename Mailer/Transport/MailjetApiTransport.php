@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport;
 
 use Doctrine\ORM\EntityManager;
+use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportInterface;
 use Mautic\EmailBundle\Mailer\Transport\TokenTransportTrait;
@@ -53,6 +54,9 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         HttpClientInterface $client = null,
         EventDispatcherInterface $dispatcher = null,
         LoggerInterface $logger = null,
+        // Unused on purpose: kept for BC with ControlDuplicateEmailBundle CustomMailFactory,
+        // which still passes CoreParametersHelper before EntityManager.
+        private CoreParametersHelper $coreParametersHelper,
         private EntityManager $em,
         callable $manipulateMetadata = null,
     ) {
@@ -212,7 +216,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     public function preparePayloadFromTestMail(MauticMessage $email, Envelope $envelope): array
     {
         $message     = [
-            'From'             => $this->formatAddress($envelope->getSender()),
+            'From'             => $this->formatAddress($this->resolveFallbackFrom($email, $envelope)),
             'To'               => $this->formatAddresses($this->getRecipients($email, $envelope)),
             'Subject'          => $email->getSubject(),
             'TextPart'         => $email->getTextBody(),
@@ -280,8 +284,8 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
                     $entityNameFrom  = (string) ($emailEntity->getFromName() ?? '');
 
                     // Unresolved contact-field tokens are not RFC-compliant addresses.
-                    // Prefer envelope/message From (e.g. resolved by Dynamic Sender / MailHelper).
-                    // Plain addresses on the email entity keep overriding the envelope as before.
+                    // Prefer message From (e.g. resolved by Dynamic Sender / MailHelper).
+                    // Plain addresses on the email entity keep overriding as before.
                     if ($this->containsContactFieldToken($entityEmailFrom)) {
                         $entityEmailFrom = '';
                     }
@@ -292,7 +296,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             }
         }
 
-        $address = $envelope->getSender();
+        $address = $this->resolveFallbackFrom($email, $envelope);
         if (empty($entityEmailFrom)) {
             $entityEmailFrom = $address->getAddress();
         }
@@ -302,6 +306,18 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         }
 
         return new Address($entityEmailFrom, $entityNameFrom);
+    }
+
+    /**
+     * Prefer message From over Envelope::getSender().
+     * With mailer_return_path set, getSender() returns Return-Path (Symfony order:
+     * Sender → Return-Path → From), not the From resolved by Dynamic Sender / MailHelper.
+     */
+    private function resolveFallbackFrom(Email $email, Envelope $envelope): Address
+    {
+        $from = $email->getFrom();
+
+        return $from[0] ?? $envelope->getSender();
     }
 
     /**

@@ -6,6 +6,7 @@ namespace MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Tests\Unit\Mailer\Transpo
 
 use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\EntityRepository;
+use Mautic\CoreBundle\Helper\CoreParametersHelper;
 use Mautic\EmailBundle\Entity\Email as EmailEntity;
 use Mautic\EmailBundle\Mailer\Message\MauticMessage;
 use MauticPlugin\LeuchtfeuerMailjetAdapterBundle\Mailer\Transport\MailjetApiTransport;
@@ -43,6 +44,7 @@ final class MailjetApiTransportTest extends TestCase
         $transportCallbackMock = $this->createMock(MailjetTransportCallback::class);
         $eventDispatcherMock   = $this->createMock(EventDispatcherInterface::class);
         $loggerMock            = $this->createMock(LoggerInterface::class);
+        $coreParametersHelper  = $this->createMock(CoreParametersHelper::class);
 
         $this->transport = new MailjetApiTransport(
             'user',
@@ -52,6 +54,7 @@ final class MailjetApiTransportTest extends TestCase
             $this->httpClientMock,
             $eventDispatcherMock,
             $loggerMock,
+            $coreParametersHelper,
             $this->entityManager
         );
     }
@@ -256,16 +259,18 @@ final class MailjetApiTransportTest extends TestCase
         Assert::assertSame('Entity Name', $payload['Messages'][0]['From']['Name']);
     }
 
-    public function testPreparePayloadFallsBackToEnvelopeWhenEntityFromIsTokenized(): void
+    public function testPreparePayloadFallsBackToMessageFromWhenEntityFromIsTokenized(): void
     {
         $emailEntity = new EmailEntity();
         $emailEntity->setFromAddress('{contactfield=vbe_mail_contact}');
         $emailEntity->setFromName('{contactfield=firstname}');
         $this->mockEmailEntityLookup(42, $emailEntity);
 
-        $message  = $this->getMauticMessageWithEmailId(42);
+        $message = $this->getMauticMessageWithEmailId(42);
+        $message->from(new Address('resolved@example.com', 'Resolved Name'));
+        // Envelope sender simulates mailer_return_path (Symfony prefers Return-Path over From).
         $envelope = new Envelope(
-            new Address('resolved@example.com', 'Resolved Name'),
+            new Address('return-path@example.com', 'Return Path'),
             [new Address('to@mautic.com', 'To Name')]
         );
 
@@ -282,9 +287,10 @@ final class MailjetApiTransportTest extends TestCase
         $emailEntity->setFromName('Static Display Name');
         $this->mockEmailEntityLookup(42, $emailEntity);
 
-        $message  = $this->getMauticMessageWithEmailId(42);
+        $message = $this->getMauticMessageWithEmailId(42);
+        $message->from(new Address('resolved@example.com', 'Envelope Name'));
         $envelope = new Envelope(
-            new Address('resolved@example.com', 'Envelope Name'),
+            new Address('return-path@example.com', 'Return Path'),
             [new Address('to@mautic.com', 'To Name')]
         );
 
@@ -292,6 +298,24 @@ final class MailjetApiTransportTest extends TestCase
 
         Assert::assertSame('resolved@example.com', $payload['Messages'][0]['From']['Email']);
         Assert::assertSame('Static Display Name', $payload['Messages'][0]['From']['Name']);
+    }
+
+    public function testPreparePayloadFallsBackToEnvelopeWhenMessageHasNoFrom(): void
+    {
+        $emailEntity = new EmailEntity();
+        $emailEntity->setFromAddress('{contactfield=vbe_mail_contact}');
+        $this->mockEmailEntityLookup(42, $emailEntity);
+
+        $message  = $this->getMauticMessageWithEmailId(42);
+        $envelope = new Envelope(
+            new Address('envelope@example.com', 'Envelope Name'),
+            [new Address('to@mautic.com', 'To Name')]
+        );
+
+        $payload = $this->transport->preparePayloadFromMetadata($message->getMetadata(), $message, $envelope);
+
+        Assert::assertSame('envelope@example.com', $payload['Messages'][0]['From']['Email']);
+        Assert::assertSame('Envelope Name', $payload['Messages'][0]['From']['Name']);
     }
 
     public function testPreparePayloadFallsBackToMessageReplyToWhenEntityReplyToIsTokenized(): void
