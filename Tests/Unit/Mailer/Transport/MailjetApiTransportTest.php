@@ -318,6 +318,47 @@ final class MailjetApiTransportTest extends TestCase
         Assert::assertSame('Envelope Name', $payload['Messages'][0]['From']['Name']);
     }
 
+    public function testPreparePayloadUsesPerContactDynamicSenderFrom(): void
+    {
+        // Reply-To path still loads the email entity; From must come from per-contact metadata.
+        $this->mockEmailEntityLookup(42, new EmailEntity());
+
+        $message = new MauticMessage();
+        $message->subject('Hello');
+        $message->text('Body');
+        $message->html('<p>Body</p>');
+        $message->from(new Address('batch-fallback@example.com', 'Batch Fallback'));
+        $message->addMetadata('a@example.com', [
+            'leadId'            => '1',
+            'hashId'            => 'hash-a',
+            'emailId'           => 42,
+            'name'              => 'A',
+            'tokens'            => [],
+            'dynamicSenderFrom' => ['email' => 'from-a@example.com', 'name' => 'Alice'],
+        ]);
+        $message->addMetadata('b@example.com', [
+            'leadId'            => '2',
+            'hashId'            => 'hash-b',
+            'emailId'           => 42,
+            'name'              => 'B',
+            'tokens'            => [],
+            'dynamicSenderFrom' => ['email' => 'from-b@example.com', 'name' => 'Bob'],
+        ]);
+
+        $envelope = new Envelope(
+            new Address('return-path@example.com', 'Return Path'),
+            [new Address('a@example.com', 'A'), new Address('b@example.com', 'B')]
+        );
+
+        $payload = $this->transport->preparePayloadFromMetadata($message->getMetadata(), $message, $envelope);
+
+        Assert::assertCount(2, $payload['Messages']);
+        Assert::assertSame('from-a@example.com', $payload['Messages'][0]['From']['Email']);
+        Assert::assertSame('Alice', $payload['Messages'][0]['From']['Name']);
+        Assert::assertSame('from-b@example.com', $payload['Messages'][1]['From']['Email']);
+        Assert::assertSame('Bob', $payload['Messages'][1]['From']['Name']);
+    }
+
     public function testPreparePayloadFallsBackToMessageReplyToWhenEntityReplyToIsTokenized(): void
     {
         $emailEntity = new EmailEntity();

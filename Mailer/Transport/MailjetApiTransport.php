@@ -43,6 +43,12 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         'X-Mailjet-Debug', 'User-Agent', 'X-Mailer', 'X-MJ-WorkflowID',
     ];
 
+    /**
+     * Per-contact From stamped by LeuchtfeuerDynamicSenderBundle (DynamicSenderMetadata::FROM_KEY).
+     * Shape: ['email' => string, 'name' => string].
+     */
+    private const DYNAMIC_SENDER_FROM_KEY = 'dynamicSenderFrom';
+
     /** @var callable|null */
     private $manipulatePayload;
 
@@ -162,7 +168,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $attachments   = $this->prepareAttachments($email);
             $newTokens     = $this->prepareTokenFromLeadMetadata($email, $leadData);
             $emailData     = [
-                'From'             => $this->formatAddress($this->getEmailFrom($email, $envelope)),
+                'From'             => $this->formatAddress($this->getEmailFrom($email, $envelope, $leadData)),
                 'To'               => $to,
                 'Subject'          => $email->getSubject(),
                 'Attachments'      => $attachments,
@@ -269,8 +275,23 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         ];
     }
 
-    private function getEmailFrom(Email $email, Envelope $envelope): Address
+    /**
+     * @param array<string, mixed> $leadData Recipient metadata for the current Messages[] entry
+     */
+    private function getEmailFrom(Email $email, Envelope $envelope, array $leadData = []): Address
     {
+        // Prefer per-contact From from Dynamic Sender (tokenized batch sends).
+        if (!empty($leadData[self::DYNAMIC_SENDER_FROM_KEY]['email'])
+            && is_string($leadData[self::DYNAMIC_SENDER_FROM_KEY]['email'])
+        ) {
+            $name = $leadData[self::DYNAMIC_SENDER_FROM_KEY]['name'] ?? '';
+
+            return new Address(
+                $leadData[self::DYNAMIC_SENDER_FROM_KEY]['email'],
+                is_string($name) ? $name : ''
+            );
+        }
+
         $entityEmailFrom = '';
         $entityNameFrom  = '';
 
