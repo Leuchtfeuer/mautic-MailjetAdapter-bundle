@@ -251,6 +251,36 @@ final class MailjetApiTransportTest extends TestCase
         return $method->invokeArgs($object, $args);
     }
 
+    public function testPreparePayloadPreservesPlusAddressingInLocalPart(): void
+    {
+        $plusEmail = 'l.oltmanns+1@leuchtfeuer.com';
+
+        $mauticMessage = new MauticMessage();
+        $mauticMessage->subject('Plus addressing');
+        $mauticMessage->html('<p>Hello</p>');
+        $mauticMessage->text('Hello');
+        $mauticMessage->from(new Address('from@mautic.com', 'From Name'));
+        $mauticMessage->to(new Address($plusEmail, 'Plus User'));
+        $mauticMessage->addMetadata($plusEmail, [
+            'name'   => 'Plus User',
+            'leadId' => '123',
+            'hashId' => 'abc',
+            'tokens' => [],
+        ]);
+
+        $this->envelopeMock
+            ->method('getSender')
+            ->willReturn(new Address('from@mautic.com', 'From Name'));
+
+        $payload = $this->transport->preparePayloadFromMetadata(
+            $mauticMessage->getMetadata(),
+            $mauticMessage,
+            $this->envelopeMock
+        );
+
+        Assert::assertSame($plusEmail, $payload['Messages'][0]['To'][0]['Email']);
+    }
+
     private function getMauticMessage(): MauticMessage
     {
         $mauticMessage = new MauticMessage();

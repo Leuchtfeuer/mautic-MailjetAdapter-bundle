@@ -147,8 +147,7 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
     {
         $message  = [];
         foreach ($metadata as $leadEmail => $leadData) {
-            $leadEmail = $this->cleanEmail($leadEmail);
-            $to        = [
+            $to = [
                 [
                     'Email' => $leadEmail,
                     'Name'  => $leadData['name'] ?? '',
@@ -423,10 +422,5 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         $email->html($htmlPart);
 
         return $retTokens;
-    }
-
-    private function cleanEmail(string $email)
-    {
-        return preg_replace('/\+\d+/', '', $email);
     }
 }
