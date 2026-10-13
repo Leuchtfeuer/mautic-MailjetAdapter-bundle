@@ -61,12 +61,14 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
         EventDispatcherInterface $dispatcher = null,
         LoggerInterface $logger = null,
         // Unused on purpose: kept for BC with ControlDuplicateEmailBundle CustomMailFactory,
-        // which still passes CoreParametersHelper before EntityManager.
-        private CoreParametersHelper $coreParametersHelper,
+        // which still passes CoreParametersHelper before EntityManager. Not stored as a
+        // property so PHPStan does not flag it as write-only.
+        CoreParametersHelper $coreParametersHelper,
         private EntityManager $em,
         callable $manipulateMetadata = null,
     ) {
         parent::__construct($client, $dispatcher, $logger);
+        unset($coreParametersHelper);
         $this->manipulatePayload = $manipulateMetadata;
         $this->host              = self::HOST;
     }
