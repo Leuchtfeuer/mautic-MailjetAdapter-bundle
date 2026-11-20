@@ -426,6 +426,66 @@ final class MailjetApiTransportTest extends TestCase
         Assert::assertSame('entity-reply@example.com', $payload['Messages'][0]['ReplyTo']['Email']);
     }
 
+    public function testPreparePayloadUsesHeaderFromOverReturnPathForOwnerAsMailer(): void
+    {
+        $emailEntity = new EmailEntity();
+        $emailEntity->setUseOwnerAsMailer(true);
+        $this->mockEmailEntityLookup(42, $emailEntity);
+
+        $message = $this->getMauticMessageWithEmailId(42);
+        $message->from(new Address('owner@example.com', 'Owner Name'));
+        // Envelope sender simulates mailer_return_path (Symfony prefers Return-Path over From).
+        $envelope = new Envelope(
+            new Address('bounce@example.com'),
+            [new Address('to@mautic.com', 'To Name')]
+        );
+
+        $payload = $this->transport->preparePayloadFromMetadata($message->getMetadata(), $message, $envelope);
+
+        Assert::assertSame('owner@example.com', $payload['Messages'][0]['From']['Email']);
+        Assert::assertSame('Owner Name', $payload['Messages'][0]['From']['Name']);
+    }
+
+    public function testPreparePayloadUsesHeaderFromOverEntityFromForOwnerAsMailer(): void
+    {
+        $emailEntity = new EmailEntity();
+        $emailEntity->setFromAddress('entity@example.com');
+        $emailEntity->setFromName('Entity Name');
+        $emailEntity->setUseOwnerAsMailer(true);
+        $this->mockEmailEntityLookup(42, $emailEntity);
+
+        $message = $this->getMauticMessageWithEmailId(42);
+        $message->from(new Address('owner@example.com', 'Owner Name'));
+        $envelope = new Envelope(
+            new Address('bounce@example.com'),
+            [new Address('to@mautic.com', 'To Name')]
+        );
+
+        $payload = $this->transport->preparePayloadFromMetadata($message->getMetadata(), $message, $envelope);
+
+        Assert::assertSame('owner@example.com', $payload['Messages'][0]['From']['Email']);
+        Assert::assertSame('Owner Name', $payload['Messages'][0]['From']['Name']);
+    }
+
+    public function testPreparePayloadFallsBackToEnvelopeForOwnerAsMailerWithoutHeaderFrom(): void
+    {
+        $emailEntity = new EmailEntity();
+        $emailEntity->setFromAddress('entity@example.com');
+        $emailEntity->setUseOwnerAsMailer(true);
+        $this->mockEmailEntityLookup(42, $emailEntity);
+
+        $message  = $this->getMauticMessageWithEmailId(42);
+        $envelope = new Envelope(
+            new Address('envelope@example.com', 'Envelope Name'),
+            [new Address('to@mautic.com', 'To Name')]
+        );
+
+        $payload = $this->transport->preparePayloadFromMetadata($message->getMetadata(), $message, $envelope);
+
+        Assert::assertSame('envelope@example.com', $payload['Messages'][0]['From']['Email']);
+        Assert::assertSame('Envelope Name', $payload['Messages'][0]['From']['Name']);
+    }
+
     private function mockEmailEntityLookup(int $emailId, EmailEntity $emailEntity): void
     {
         /** @var EntityRepository<EmailEntity>&MockObject $repository */

@@ -306,7 +306,9 @@ final class MailjetApiTransport extends AbstractApiTransport implements TokenTra
             $metadata = reset($metadata);
             if (isset($metadata['emailId']) && !empty($metadata['emailId'])) {
                 $emailEntity = $this->em->getRepository(\Mautic\EmailBundle\Entity\Email::class)->find($metadata['emailId']);
-                if (null !== $emailEntity) {
+                // With "use owner as mailer", core MailHelper::flushQueue() already set the
+                // resolved From (owner or fallback) per batch, so it must not be overridden.
+                if (null !== $emailEntity && !$emailEntity->getUseOwnerAsMailer()) {
                     $entityEmailFrom = (string) ($emailEntity->getFromAddress() ?? '');
                     $entityNameFrom  = (string) ($emailEntity->getFromName() ?? '');
 
